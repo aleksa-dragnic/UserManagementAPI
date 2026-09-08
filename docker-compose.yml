@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: umapi-db
+    environment:
+      POSTGRES_USER: umapi
+      POSTGRES_PASSWORD: umapi
+      POSTGRES_DB: umapi
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umapi -d umapi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: umapi-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=umapi;Username=umapi;Password=umapi"
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
+using UserManagementAPI.Application.Abstractions;
+
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 
@@ -10,7 +12,8 @@ namespace UserManagementAPI.Infrastructure.Persistence;
 /// IEntityTypeConfiguration classes rather than attributes, so no persistence
 /// concern reaches back into the domain (ADR 0004).
 /// </summary>
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
+    : DbContext(options), IUnitOfWork
 {
     public DbSet<User> Users => Set<User>();
 

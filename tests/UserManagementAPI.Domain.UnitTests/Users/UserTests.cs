@@ -91,7 +91,7 @@ public class UserTests
     [Fact]
     public void ChangeName_Fails_WhenTheUserIsDeactivated()
     {
-        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "Jovanović"));
+        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "JovanoviÄ‡"));
 
         result.Error.Should().Be(User.Deactivated);
     }
@@ -165,5 +165,74 @@ public class UserTests
     public void Deactivate_Fails_WhenTheUserIsAlreadyDeactivated()
     {
         TestUsers.Deactivated().Deactivate().Error.Should().Be(User.AlreadyDeactivated);
+    }
+    [Fact]
+    public void AssignRole_RecordsTheAssignment()
+    {
+        var user = TestUsers.Active();
+        var roleId = Guid.NewGuid();
+
+        var result = user.AssignRole(roleId);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Roles.Should().ContainSingle()
+            .Which.Should().Match<UserRole>(role => role.UserId == user.Id && role.RoleId == roleId);
+    }
+
+    [Fact]
+    public void AssignRole_Fails_WhenTheSameRoleIsAssignedTwice()
+    {
+        var user = TestUsers.Active();
+        var roleId = Guid.NewGuid();
+        user.AssignRole(roleId);
+
+        var result = user.AssignRole(roleId);
+
+        result.Error.Should().Be(User.RoleAlreadyAssigned);
+        user.Roles.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void AssignRole_Fails_WhenTheUserIsDeactivated()
+    {
+        TestUsers.Deactivated().AssignRole(Guid.NewGuid()).Error.Should().Be(User.Deactivated);
+    }
+
+    [Fact]
+    public void RemoveRole_DropsTheAssignment_WhenAnotherRoleRemains()
+    {
+        var user = TestUsers.Active();
+        var first = Guid.NewGuid();
+        user.AssignRole(first);
+        user.AssignRole(Guid.NewGuid());
+
+        var result = user.RemoveRole(first);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Roles.Should().ContainSingle().Which.RoleId.Should().NotBe(first);
+    }
+
+    [Fact]
+    public void RemoveRole_Fails_WhenItIsTheLastRemainingRole()
+    {
+        var user = TestUsers.Active();
+        var roleId = Guid.NewGuid();
+        user.AssignRole(roleId);
+
+        var result = user.RemoveRole(roleId);
+
+        result.Error.Should().Be(User.LastRoleCannotBeRemoved);
+        user.Roles.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void RemoveRole_Fails_WhenTheUserDoesNotHoldTheRole()
+    {
+        var user = TestUsers.Active();
+        user.AssignRole(Guid.NewGuid());
+
+        var result = user.RemoveRole(Guid.NewGuid());
+
+        result.Error.Should().Be(User.RoleNotAssigned);
     }
 }

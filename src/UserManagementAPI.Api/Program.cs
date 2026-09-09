@@ -4,6 +4,7 @@ using Serilog;
 using UserManagementAPI.Api.Errors;
 
 using UserManagementAPI.Infrastructure;
+using UserManagementAPI.Api.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -34,6 +35,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+await app.MigrateAndSeedAsync();
 
 app.UseSerilogRequestLogging();
 

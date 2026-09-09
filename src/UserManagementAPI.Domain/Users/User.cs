@@ -31,6 +31,18 @@ public sealed class User : AggregateRoot
         "User.EmailNotUnique",
         "A user with this email already exists.");
 
+    public static readonly Error RoleAlreadyAssigned = new(
+        "User.RoleAlreadyAssigned",
+        "The user already holds this role.");
+
+    public static readonly Error LastRoleCannotBeRemoved = new(
+        "User.LastRoleCannotBeRemoved",
+        "A user must retain at least one role.");
+
+    public static readonly Error RoleNotAssigned = new(
+        "User.RoleNotAssigned",
+        "The user does not hold this role.");
+
     private readonly List<UserRole> _roles = [];
 
     private User(Guid id, Email email, PersonName name, PasswordHash passwordHash)
@@ -152,6 +164,49 @@ public sealed class User : AggregateRoot
         }
 
         Status = UserStatus.Deactivated;
+        Touch();
+
+        return Result.Success();
+    }
+
+    public Result AssignRole(Guid roleId)
+    {
+        if (Status == UserStatus.Deactivated)
+        {
+            return Result.Failure(Deactivated);
+        }
+
+        if (_roles.Any(role => role.RoleId == roleId))
+        {
+            return Result.Failure(RoleAlreadyAssigned);
+        }
+
+        _roles.Add(new UserRole(Id, roleId));
+        Touch();
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// A user must retain at least one role. A user with none is not a user with
+    /// reduced access — it is a user no permission check can reason about, which
+    /// is a state the system should not be able to reach.
+    /// </summary>
+    public Result RemoveRole(Guid roleId)
+    {
+        var assigned = _roles.FirstOrDefault(role => role.RoleId == roleId);
+
+        if (assigned is null)
+        {
+            return Result.Failure(RoleNotAssigned);
+        }
+
+        if (_roles.Count == 1)
+        {
+            return Result.Failure(LastRoleCannotBeRemoved);
+        }
+
+        _roles.Remove(assigned);
         Touch();
 
         return Result.Success();

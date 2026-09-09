@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /source
 
 COPY Directory.Build.props ./
+COPY Directory.Packages.props ./
 COPY UserManagementAPI.sln ./
 COPY src/UserManagementAPI.Domain/*.csproj                    src/UserManagementAPI.Domain/
 COPY src/UserManagementAPI.Application/*.csproj               src/UserManagementAPI.Application/

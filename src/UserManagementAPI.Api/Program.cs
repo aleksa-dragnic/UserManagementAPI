@@ -1,10 +1,14 @@
 using System.Diagnostics;
+
 using Scalar.AspNetCore;
+
 using Serilog;
+
 using UserManagementAPI.Api.Errors;
-
-using UserManagementAPI.Infrastructure;
 using UserManagementAPI.Api.Extensions;
+using UserManagementAPI.Application;
+using UserManagementAPI.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -12,6 +16,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();

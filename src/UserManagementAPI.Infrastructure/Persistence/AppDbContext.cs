@@ -4,6 +4,7 @@ using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
+using UserManagementAPI.Infrastructure.Outbox;
 
 namespace UserManagementAPI.Infrastructure.Persistence;
 
@@ -20,6 +21,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Role> Roles => Set<Role>();
 
     public DbSet<Permission> Permissions => Set<Permission>();
+
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     /// <summary>
     /// Opens the transaction inside the configured execution strategy. With

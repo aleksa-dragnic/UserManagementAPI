@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
+using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Contracts.V1;
 using UserManagementAPI.Api.Extensions;
 using UserManagementAPI.Api.Mapping;
@@ -7,6 +8,7 @@ using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Users.Commands.LockUser;
 using UserManagementAPI.Application.Users.Commands.RemoveRole;
 using UserManagementAPI.Application.Users.Commands.UnlockUser;
+using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.Api.Controllers.V1;
 
@@ -15,7 +17,8 @@ namespace UserManagementAPI.Api.Controllers.V1;
 /// dispatches it and converts the Result to an ActionResult. There is no other
 /// logic here — a rule that would need one belongs in the aggregate.
 ///
-/// The read side (GET) arrives in M5 PR18, and the permission gates in M4 PR16.
+/// Every action names the permission it requires; there is no bare [Authorize]
+/// anywhere in the project. The read side (GET) arrives in M5 PR18.
 /// </summary>
 [ApiController]
 [Route("api/v1/users")]
@@ -24,6 +27,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Registers a user. The account starts Pending until its email is verified.</summary>
     [HttpPost]
+    [HasPermission(PermissionCodes.UsersWrite)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<UserCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -41,6 +47,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     /// <summary>Replaces the user's email and name.</summary>
     [HttpPut("{id:guid}")]
+    [HasPermission(PermissionCodes.UsersWrite)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -54,6 +63,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     /// <summary>Locks the user. A locked user cannot log in (M4).</summary>
     [HttpPost("{id:guid}/lock")]
+    [HasPermission(PermissionCodes.UsersLock)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -66,6 +78,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     /// <summary>Removes the lock. Modelled as deleting the lock resource.</summary>
     [HttpDelete("{id:guid}/lock")]
+    [HasPermission(PermissionCodes.UsersLock)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -78,6 +93,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     /// <summary>Assigns a role to the user.</summary>
     [HttpPost("{id:guid}/roles")]
+    [HasPermission(PermissionCodes.RolesManage)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -91,6 +109,9 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 
     /// <summary>Removes a role from the user. The last role cannot be removed.</summary>
     [HttpDelete("{id:guid}/roles/{roleId:guid}")]
+    [HasPermission(PermissionCodes.RolesManage)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

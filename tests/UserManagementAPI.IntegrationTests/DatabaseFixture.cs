@@ -22,6 +22,12 @@ public sealed class DatabaseFixture : IAsyncLifetime
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
 
+    public const string AdministratorEmail = "admin@umapi.local";
+
+    public const string AdministratorPassword = "Admin-Test-Passw0rd!";
+
+    public const string SigningKey = "integration-test-signing-key-never-used-outside-the-test-run-0123456789";
+
     public string ConnectionString => _container.GetConnectionString();
 
     public async Task InitializeAsync()
@@ -39,20 +45,40 @@ public sealed class DatabaseFixture : IAsyncLifetime
     public AppDbContext CreateContext(IDomainEventPublisher publisher) => new(BuildOptions(publisher));
 
     /// <summary>
+    /// The configuration the production wiring runs under in tests: the
+    /// container, a zero-backoff outbox with a ceiling of three, cheap Argon2
+    /// parameters, a signing key, and a seeded administrator.
+    /// </summary>
+    public Dictionary<string, string?> DefaultSettings() => new()
+    {
+        ["ConnectionStrings:Default"] = ConnectionString,
+        ["Outbox:BaseBackoff"] = "00:00:00",
+        ["Outbox:MaxAttempts"] = "3",
+        ["Argon2:MemorySizeKb"] = "8192",
+        ["Argon2:Iterations"] = "1",
+        ["Jwt:SigningKey"] = SigningKey,
+        ["Seed:AdministratorEmail"] = AdministratorEmail,
+        ["Seed:AdministratorPassword"] = AdministratorPassword
+    };
+
+    /// <summary>
     /// The production wiring — AddApplication plus AddInfrastructure — against
     /// the container, so a test can prove the pieces cooperate the way they will
-    /// in the running API. The outbox is configured to retry without delay and
-    /// give up after three attempts, so a retry test finishes in milliseconds.
+    /// in the running API. Settings override DefaultSettings key by key.
     /// </summary>
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public ServiceProvider CreateServiceProvider(
+        Action<IServiceCollection>? configure = null,
+        IDictionary<string, string?>? settings = null)
     {
+        var values = DefaultSettings();
+
+        foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
+        {
+            values[key] = value;
+        }
+
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Default"] = ConnectionString,
-                ["Outbox:BaseBackoff"] = "00:00:00",
-                ["Outbox:MaxAttempts"] = "3"
-            })
+            .AddInMemoryCollection(values)
             .Build();
 
         var services = new ServiceCollection();

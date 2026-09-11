@@ -12,6 +12,7 @@ namespace UserManagementAPI.Api.Errors;
 /// status is chosen by error-code family, not by listing every code:
 ///
 ///   Validation.*                     422 Unprocessable Content
+///   Auth.*                           401 Unauthorized
 ///   *.NotFound                       404 Not Found
 ///   *NotUnique, *.Already*           409 Conflict
 ///   everything else                  400 Bad Request
@@ -26,6 +27,11 @@ internal static class ErrorMapping
         if (error is ValidationError)
         {
             return StatusCodes.Status422UnprocessableEntity;
+        }
+
+        if (error.Code.StartsWith("Auth.", StringComparison.Ordinal))
+        {
+            return StatusCodes.Status401Unauthorized;
         }
 
         if (error.Code.EndsWith(".NotFound", StringComparison.Ordinal))
@@ -71,6 +77,7 @@ internal static class ErrorMapping
 
     private static string TypeFor(int status) => status switch
     {
+        StatusCodes.Status401Unauthorized => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.2",
         StatusCodes.Status404NotFound => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5",
         StatusCodes.Status409Conflict => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.10",
         StatusCodes.Status422UnprocessableEntity => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.21",
@@ -79,6 +86,7 @@ internal static class ErrorMapping
 
     private static string TitleFor(int status) => status switch
     {
+        StatusCodes.Status401Unauthorized => "Unauthorized",
         StatusCodes.Status404NotFound => "Not Found",
         StatusCodes.Status409Conflict => "Conflict",
         StatusCodes.Status422UnprocessableEntity => "Unprocessable Content",

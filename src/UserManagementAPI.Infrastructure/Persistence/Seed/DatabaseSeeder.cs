@@ -1,21 +1,35 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
+using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Roles;
+using UserManagementAPI.Domain.Users;
 
 namespace UserManagementAPI.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// Puts the permission codes and the two shipped roles in place. Idempotent by
-/// design: it checks before it inserts, so it can run on every startup in
-/// development without accumulating duplicates or failing on the second boot.
+/// Puts the permission codes, the two shipped roles and the bootstrap
+/// administrator in place. Idempotent by design: it checks before it inserts,
+/// so it can run on every startup in development without accumulating
+/// duplicates or failing on the second boot.
+///
+/// The administrator was deferred from M2 PR9 to here, where a real password
+/// hasher exists. Its password comes from configuration and is never logged.
 /// </summary>
-public sealed class DatabaseSeeder(AppDbContext context, ILogger<DatabaseSeeder> logger)
+public sealed class DatabaseSeeder(
+    AppDbContext context,
+    IPasswordHasher passwordHasher,
+    IOptions<SeedOptions> seedOptions,
+    ILogger<DatabaseSeeder> logger)
 {
+    private readonly SeedOptions _seed = seedOptions.Value;
+
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var seededPermissions = await SeedPermissionsAsync(cancellationToken);
-        await SeedRolesAsync(seededPermissions, cancellationToken);
+        var administratorRoleId = await SeedRolesAsync(seededPermissions, cancellationToken);
+        await SeedAdministratorAsync(administratorRoleId, cancellationToken);
     }
 
     private async Task<Dictionary<string, Guid>> SeedPermissionsAsync(CancellationToken cancellationToken)
@@ -38,17 +52,20 @@ public sealed class DatabaseSeeder(AppDbContext context, ILogger<DatabaseSeeder>
         return existing;
     }
 
-    private async Task SeedRolesAsync(
+    /// <summary>Returns the Administrator role id, which the administrator account needs.</summary>
+    private async Task<Guid> SeedRolesAsync(
         Dictionary<string, Guid> permissionIds,
         CancellationToken cancellationToken)
     {
-        await SeedRoleAsync(RoleNames.Administrator, PermissionCodes.All, permissionIds, cancellationToken);
+        var administrator = await SeedRoleAsync(RoleNames.Administrator, PermissionCodes.All, permissionIds, cancellationToken);
         await SeedRoleAsync(RoleNames.Member, PermissionCodes.ReadOnly, permissionIds, cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
+
+        return administrator.Id;
     }
 
-    private async Task SeedRoleAsync(
+    private async Task<Role> SeedRoleAsync(
         string name,
         IReadOnlyCollection<string> codes,
         Dictionary<string, Guid> permissionIds,
@@ -72,5 +89,37 @@ public sealed class DatabaseSeeder(AppDbContext context, ILogger<DatabaseSeeder>
         {
             role.AddPermission(permissionIds[code]);
         }
+
+        return role;
+    }
+
+    private async Task SeedAdministratorAsync(Guid administratorRoleId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_seed.AdministratorPassword))
+        {
+            logger.LogWarning(
+                "Seed:AdministratorPassword is not configured; the bootstrap administrator was not seeded.");
+
+            return;
+        }
+
+        var email = Email.Create(_seed.AdministratorEmail).Value;
+
+        if (await context.Users.AnyAsync(user => user.Email.Value == email.Value, cancellationToken))
+        {
+            return;
+        }
+
+        var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.AdministratorPassword)).Value;
+        var name = PersonName.Create("System", "Administrator").Value;
+
+        var administrator = User.Register(email, name, passwordHash).Value;
+        administrator.VerifyEmail();
+        administrator.AssignRole(administratorRoleId);
+
+        context.Users.Add(administrator);
+        await context.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Seeding bootstrap administrator {AdministratorEmail}.", email.Value);
     }
 }

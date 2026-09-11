@@ -84,6 +84,30 @@ public static class DependencyInjection
         services.AddScoped<OutboxBatchProcessor>();
         services.AddHostedService<OutboxProcessor>();
 
+        AddQueryHandlers(services);
+
         return services;
+    }
+
+    /// <summary>
+    /// Query handlers live in this assembly, next to the DbContext they project
+    /// from (ADR 0016); AddApplication scans only the Application assembly, so
+    /// they are registered here the same way — by scanning, not by list.
+    /// </summary>
+    private static void AddQueryHandlers(IServiceCollection services)
+    {
+        var registrations = typeof(DependencyInjection).Assembly
+            .GetTypes()
+            .Where(type => type is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false })
+            .SelectMany(type => type
+                .GetInterfaces()
+                .Where(implemented =>
+                    implemented.IsGenericType && implemented.GetGenericTypeDefinition() == typeof(IQueryHandler<,>))
+                .Select(implemented => (Service: implemented, Implementation: type)));
+
+        foreach (var (service, implementation) in registrations)
+        {
+            services.AddScoped(service, implementation);
+        }
     }
 }

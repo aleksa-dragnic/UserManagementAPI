@@ -15,6 +15,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(user => user.Id);
 
+        // Ids are assigned by the domain (Entity constructor), never by EF Core or
+        // the database. Without this EF treats the Guid key as store-generated and
+        // tracks a child discovered through a navigation, with its key already
+        // set, as Modified instead of Added - the UPDATE then affects zero rows.
+        builder.Property(user => user.Id).ValueGeneratedNever();
+
         builder.OwnsOne(user => user.Email, email =>
         {
             email.Property(value => value.Value)

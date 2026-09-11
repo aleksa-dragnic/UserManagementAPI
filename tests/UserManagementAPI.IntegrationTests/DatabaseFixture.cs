@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.PostgreSql;
 
+using UserManagementAPI.Application;
 using UserManagementAPI.Application.Abstractions;
+using UserManagementAPI.Infrastructure;
 using UserManagementAPI.Infrastructure.Persistence;
 using UserManagementAPI.Infrastructure.Persistence.Interceptors;
 
@@ -34,13 +38,41 @@ public sealed class DatabaseFixture : IAsyncLifetime
     /// <summary>A context wired for domain event dispatch, with the publisher under test.</summary>
     public AppDbContext CreateContext(IDomainEventPublisher publisher) => new(BuildOptions(publisher));
 
+    /// <summary>
+    /// The production wiring — AddApplication plus AddInfrastructure — against
+    /// the container, so a test can prove the pieces cooperate the way they will
+    /// in the running API. The outbox is configured to retry without delay and
+    /// give up after three attempts, so a retry test finishes in milliseconds.
+    /// </summary>
+    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Default"] = ConnectionString,
+                ["Outbox:BaseBackoff"] = "00:00:00",
+                ["Outbox:MaxAttempts"] = "3"
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+
+        services.AddLogging();
+        services.AddApplication();
+        services.AddInfrastructure(configuration);
+
+        configure?.Invoke(services);
+
+        return services.BuildServiceProvider();
+    }
+
     /// <summary>Leaves the schema in place and removes the rows, so tests do not see each other's data.</summary>
     public async Task ResetAsync()
     {
         await using var context = CreateContext();
 
         await context.Database.ExecuteSqlRawAsync(
-            "truncate table user_roles, role_permissions, users, roles, permissions restart identity cascade;");
+            "truncate table outbox_messages, user_roles, role_permissions, users, roles, permissions restart identity cascade;");
     }
 
     public async Task DisposeAsync() => await _container.DisposeAsync();

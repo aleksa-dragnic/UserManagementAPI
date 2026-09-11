@@ -7,6 +7,7 @@ using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Events;
 using UserManagementAPI.Infrastructure.Identity;
+using UserManagementAPI.Infrastructure.Outbox;
 using UserManagementAPI.Infrastructure.Persistence;
 using UserManagementAPI.Infrastructure.Persistence.Interceptors;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
@@ -56,6 +57,12 @@ public static class DependencyInjection
 
         // Interim: replaced by the Argon2id hasher in M4 PR14.
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+
+        services.Configure<OutboxOptions>(configuration.GetSection(OutboxOptions.SectionName));
+        services.AddScoped<IOutboxWriter, OutboxWriter>();
+        services.AddSingleton<IOutboxPublisher, LoggingOutboxPublisher>();
+        services.AddScoped<OutboxBatchProcessor>();
+        services.AddHostedService<OutboxProcessor>();
 
         return services;
     }

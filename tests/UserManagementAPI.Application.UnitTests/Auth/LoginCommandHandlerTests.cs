@@ -2,6 +2,7 @@ using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Auth;
 using UserManagementAPI.Application.Auth.Commands.Login;
 using UserManagementAPI.Application.UnitTests.Users;
+using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Users;
 
 namespace UserManagementAPI.Application.UnitTests.Auth;
@@ -14,25 +15,36 @@ public sealed class LoginCommandHandlerTests
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IPermissionLookup _permissionLookup = Substitute.For<IPermissionLookup>();
     private readonly ITokenService _tokenService = Substitute.For<ITokenService>();
+    private readonly IRefreshTokenRepository _refreshTokens = Substitute.For<IRefreshTokenRepository>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private LoginCommandHandler Handler() =>
-        new(_userRepository, _passwordHasher, _permissionLookup, _tokenService);
+    private LoginCommandHandler Handler() => new(
+        _userRepository,
+        _passwordHasher,
+        new TokenIssuer(_permissionLookup, _tokenService, _refreshTokens),
+        _unitOfWork);
 
     [Fact]
-    public async Task ReturnsAnAccessToken_ForCorrectCredentials()
+    public async Task ReturnsATokenPair_AndStoresTheRefreshTokenHash_ForCorrectCredentials()
     {
         var user = KnownUser(TestUsers.Active());
         _passwordHasher.Verify(Password, user.PasswordHash.Value).Returns(true);
         _permissionLookup.GetPermissionCodesAsync(user.Id, Arg.Any<CancellationToken>())
             .Returns(new[] { "users.read" });
-        var expiresAt = DateTime.UtcNow.AddMinutes(15);
+        var accessExpires = DateTime.UtcNow.AddMinutes(15);
+        var refreshExpires = DateTime.UtcNow.AddDays(7);
         _tokenService.CreateAccessToken(user, Arg.Is<IReadOnlyCollection<string>>(codes => codes.Contains("users.read")))
-            .Returns(new IssuedToken("jwt", expiresAt));
+            .Returns(new IssuedToken("jwt", accessExpires));
+        _tokenService.CreateRefreshToken().Returns(new IssuedToken("raw-refresh", refreshExpires));
+        _tokenService.HashRefreshToken("raw-refresh").Returns("hashed-refresh");
 
         var result = await Handler().HandleAsync(new LoginCommand(user.Email.Value, Password));
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new AuthTokens("jwt", expiresAt));
+        result.Value.Should().Be(new AuthTokens("jwt", accessExpires, "raw-refresh", refreshExpires));
+        _refreshTokens.Received(1).Add(Arg.Is<RefreshToken>(token =>
+            token.UserId == user.Id && token.TokenHash == "hashed-refresh" && token.IsActive));
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -47,6 +59,7 @@ public sealed class LoginCommandHandlerTests
         unknownEmail.Error.Should().Be(AuthErrors.InvalidCredentials);
         wrongPassword.Error.Should().Be(AuthErrors.InvalidCredentials);
         _tokenService.DidNotReceiveWithAnyArgs().CreateAccessToken(default!, default!);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

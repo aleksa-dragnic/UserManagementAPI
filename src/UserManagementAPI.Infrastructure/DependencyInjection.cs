@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
+using UserManagementAPI.Infrastructure.Auditing;
 using UserManagementAPI.Infrastructure.Events;
 using UserManagementAPI.Infrastructure.Identity;
 using UserManagementAPI.Infrastructure.Outbox;
@@ -38,6 +40,12 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.AddScoped<DomainEventDispatchInterceptor>();
 
+        // The Api registers its HTTP-aware ICurrentUser before calling this;
+        // everywhere else — seeder, outbox processor, tests — the actor is the
+        // system.
+        services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
+        services.AddScoped<AuditInterceptor>();
+
         services.AddDbContext<AppDbContext>((serviceProvider, options) => options
             .UseNpgsql(connectionString, npgsql =>
             {
@@ -51,7 +59,11 @@ public static class DependencyInjection
                 npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
             })
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(serviceProvider.GetRequiredService<DomainEventDispatchInterceptor>()));
+            // Order matters: events dispatch first, then the audit sees what the
+            // handlers changed.
+            .AddInterceptors(
+                serviceProvider.GetRequiredService<DomainEventDispatchInterceptor>(),
+                serviceProvider.GetRequiredService<AuditInterceptor>()));
 
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
         services.AddScoped<IUserRepository, UserRepository>();

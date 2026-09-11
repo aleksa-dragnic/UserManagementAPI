@@ -5,6 +5,7 @@ using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
+using UserManagementAPI.Infrastructure.Auditing;
 using UserManagementAPI.Infrastructure.Outbox;
 
 namespace UserManagementAPI.Infrastructure.Persistence;
@@ -26,6 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
 
     /// <summary>
     /// Opens the transaction inside the configured execution strategy. With

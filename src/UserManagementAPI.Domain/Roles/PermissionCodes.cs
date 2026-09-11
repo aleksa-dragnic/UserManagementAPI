@@ -1,9 +1,13 @@
-namespace UserManagementAPI.Infrastructure.Persistence.Seed;
+namespace UserManagementAPI.Domain.Roles;
 
 /// <summary>
-/// The permission codes the API ships with. These strings are the contract
-/// between the seed data and the authorization policies in M4 — a typo here is
-/// an endpoint nobody can reach, so both sides read the same constants.
+/// The permission codes the API ships with. A code is the unit of authorization:
+/// the seed data grants them to roles, the token carries them as claims, and the
+/// policies check them. All three read these constants — a typo between any two
+/// is an endpoint nobody can reach.
+///
+/// Moved here from Infrastructure in M4 PR16: the Api's policies need them, and
+/// Api does not reference Infrastructure outside Program.cs.
 /// </summary>
 public static class PermissionCodes
 {

@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Testcontainers.PostgreSql" />
@@ -18,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\UserManagementAPI.Api\UserManagementAPI.Api.csproj" />
     <ProjectReference Include="..\..\src\UserManagementAPI.Application\UserManagementAPI.Application.csproj" />
     <ProjectReference Include="..\..\src\UserManagementAPI.Infrastructure\UserManagementAPI.Infrastructure.csproj" />
   </ItemGroup>

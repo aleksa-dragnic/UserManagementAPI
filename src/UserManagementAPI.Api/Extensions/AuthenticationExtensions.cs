@@ -1,8 +1,10 @@
 using System.Text;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
+using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Infrastructure.Identity;
 
 namespace UserManagementAPI.Api.Extensions;
@@ -46,6 +48,11 @@ public static class AuthenticationExtensions
             });
 
         services.AddAuthorization();
+
+        // Policies are built from the permission code in the attribute, so a
+        // new code needs no registration here.
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         return services;
     }

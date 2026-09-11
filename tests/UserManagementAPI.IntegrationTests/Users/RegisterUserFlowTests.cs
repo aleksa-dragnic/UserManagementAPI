@@ -1,6 +1,6 @@
 using UserManagementAPI.Application.Users.Commands.RegisterUser;
 using UserManagementAPI.Domain.Users;
-using UserManagementAPI.Infrastructure.Identity;
+using UserManagementAPI.IntegrationTests.Identity;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
 
 namespace UserManagementAPI.IntegrationTests.Users;
@@ -21,7 +21,7 @@ public sealed class RegisterUserFlowTests(DatabaseFixture fixture) : IAsyncLifet
     public async Task RegistersAUser_ThatReloadsFromAFreshContext()
     {
         const string password = "correct horse battery staple";
-        var hasher = new Pbkdf2PasswordHasher();
+        var hasher = Argon2PasswordHasherTests.FastHasher();
         Guid userId;
 
         await using (var context = fixture.CreateContext())

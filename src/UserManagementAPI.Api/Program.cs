@@ -18,6 +18,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApiAuthentication(builder.Configuration);
 
 // Non-nullable reference types on the request contracts are not runtime
 // guarantees at the deserialization boundary; a missing field arrives as null.

@@ -17,6 +17,11 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The query projections are internal; the integration tests assert on the SQL they produce. -->
+    <InternalsVisibleTo Include="UserManagementAPI.IntegrationTests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

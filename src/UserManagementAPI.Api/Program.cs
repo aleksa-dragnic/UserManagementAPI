@@ -6,6 +6,8 @@ using Serilog;
 
 using UserManagementAPI.Api.Errors;
 using UserManagementAPI.Api.Extensions;
+using UserManagementAPI.Api.Services;
+using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application;
 using UserManagementAPI.Infrastructure;
 
@@ -17,6 +19,12 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext());
 
 builder.Services.AddApplication();
+
+// Who is acting, for the audit log. Registered ahead of AddInfrastructure so the
+// HTTP-aware implementation wins over Infrastructure's "system" default.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApiAuthentication(builder.Configuration);
 

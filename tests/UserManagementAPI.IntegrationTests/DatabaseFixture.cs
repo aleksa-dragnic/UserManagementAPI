@@ -98,7 +98,7 @@ public sealed class DatabaseFixture : IAsyncLifetime
         await using var context = CreateContext();
 
         await context.Database.ExecuteSqlRawAsync(
-            "truncate table refresh_tokens, outbox_messages, user_roles, role_permissions, users, roles, permissions restart identity cascade;");
+            "truncate table audit_log, refresh_tokens, outbox_messages, user_roles, role_permissions, users, roles, permissions restart identity cascade;");
     }
 
     public async Task DisposeAsync() => await _container.DisposeAsync();

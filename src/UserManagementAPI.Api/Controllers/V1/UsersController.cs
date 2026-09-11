@@ -8,23 +8,55 @@ using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Users.Commands.LockUser;
 using UserManagementAPI.Application.Users.Commands.RemoveRole;
 using UserManagementAPI.Application.Users.Commands.UnlockUser;
+using UserManagementAPI.Application.Users.Queries.GetUserById;
+using UserManagementAPI.Application.Users.Queries.GetUsers;
 using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.Api.Controllers.V1;
 
 /// <summary>
-/// Write side of the users resource. Each action maps the request to a command,
-/// dispatches it and converts the Result to an ActionResult. There is no other
-/// logic here — a rule that would need one belongs in the aggregate.
+/// The users resource. Each write action maps the request to a command, each
+/// read action builds a query; both dispatch and convert the Result to an
+/// ActionResult. There is no other logic here — a rule that would need one
+/// belongs in the aggregate, a read that would need one belongs in the query.
 ///
 /// Every action names the permission it requires; there is no bare [Authorize]
-/// anywhere in the project. The read side (GET) arrives in M5 PR18.
+/// anywhere in the project.
 /// </summary>
 [ApiController]
 [Route("api/v1/users")]
 [Produces("application/json")]
 public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {
+    /// <summary>Lists users, ordered by email.</summary>
+    [HttpGet]
+    [HasPermission(PermissionCodes.UsersRead)]
+    [ProducesResponseType<IReadOnlyList<UserResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.QueryAsync(new GetUsersQuery(), cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value.Select(user => user.ToResponse()).ToList())
+            : result.ToProblem(HttpContext);
+    }
+
+    /// <summary>Returns one user with the roles they hold.</summary>
+    [HttpGet("{id:guid}")]
+    [HasPermission(PermissionCodes.UsersRead)]
+    [ProducesResponseType<UserDetailsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUser(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.QueryAsync(new GetUserByIdQuery(id), cancellationToken);
+
+        return result.IsSuccess ? Ok(result.Value.ToResponse()) : result.ToProblem(HttpContext);
+    }
+
     /// <summary>Registers a user. The account starts Pending until its email is verified.</summary>
     [HttpPost]
     [HasPermission(PermissionCodes.UsersWrite)]

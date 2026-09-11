@@ -21,10 +21,14 @@ public static class ResultExtensions
 
         var problem = ErrorMapping.ToProblemDetails(result.Error, httpContext);
 
-        return new ObjectResult(problem)
+        // A JsonResult, not an ObjectResult: [Produces] on a controller rewrites
+        // the content types of every ObjectResult an action returns, and the
+        // problem would go out as application/json. RFC 9457 says
+        // application/problem+json, and a JsonResult keeps it.
+        return new JsonResult(problem)
         {
             StatusCode = problem.Status,
-            ContentTypes = { "application/problem+json" }
+            ContentType = "application/problem+json"
         };
     }
 }

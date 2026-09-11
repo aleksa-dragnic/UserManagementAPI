@@ -43,6 +43,16 @@ public sealed class User : AggregateRoot
         "User.RoleNotAssigned",
         "The user does not hold this role.");
 
+    // Code family "Auth." maps to 401. These are the two reasons a user who
+    // proved their password is still refused; the aggregate owns that rule.
+    public static readonly Error AccountLocked = new(
+        "Auth.AccountLocked",
+        "The account is locked.");
+
+    public static readonly Error AccountDeactivated = new(
+        "Auth.AccountDeactivated",
+        "The account has been deactivated.");
+
     private readonly List<UserRole> _roles = [];
 
     private User(Guid id, Email email, PersonName name, PasswordHash passwordHash)
@@ -152,6 +162,26 @@ public sealed class User : AggregateRoot
 
         Status = UserStatus.Active;
         Touch();
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Whether this account may authenticate. Pending is allowed: there is no
+    /// email verification flow yet, and refusing Pending would refuse everyone
+    /// who ever registered. Locked and Deactivated are refused.
+    /// </summary>
+    public Result EnsureCanLogIn()
+    {
+        if (Status == UserStatus.Locked)
+        {
+            return Result.Failure(AccountLocked);
+        }
+
+        if (Status == UserStatus.Deactivated)
+        {
+            return Result.Failure(AccountDeactivated);
+        }
 
         return Result.Success();
     }

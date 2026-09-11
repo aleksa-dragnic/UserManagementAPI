@@ -11,6 +11,7 @@ using UserManagementAPI.Infrastructure.Outbox;
 using UserManagementAPI.Infrastructure.Persistence;
 using UserManagementAPI.Infrastructure.Persistence.Interceptors;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
+using UserManagementAPI.Infrastructure.Persistence.Seed;
 
 namespace UserManagementAPI.Infrastructure;
 
@@ -55,8 +56,13 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
 
-        // Interim: replaced by the Argon2id hasher in M4 PR14.
-        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.Configure<Argon2Options>(configuration.GetSection(Argon2Options.SectionName));
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
+
+        services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
+        services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddScoped<IPermissionLookup, PermissionLookup>();
 
         services.Configure<OutboxOptions>(configuration.GetSection(OutboxOptions.SectionName));
         services.AddScoped<IOutboxWriter, OutboxWriter>();

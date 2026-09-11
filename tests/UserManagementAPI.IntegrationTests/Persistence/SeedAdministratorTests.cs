@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Persistence.Seed;
 

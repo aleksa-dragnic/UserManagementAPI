@@ -27,5 +27,19 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
 
     public void Add(User user) => context.Users.Add(user);
 
-    public void Update(User user) => context.Users.Update(user);
+    /// <summary>
+    /// Aggregates arrive here tracked by the context that loaded them, so the
+    /// change tracker already holds the diff and new children are discovered as
+    /// Added on SaveChanges. DbSet.Update would re-mark the whole graph Modified,
+    /// including a just-assigned role, which then fails as an UPDATE of a row
+    /// that does not exist.
+    /// </summary>
+    public void Update(User user)
+    {
+        if (context.Entry(user).State == EntityState.Detached)
+        {
+            throw new InvalidOperationException(
+                "Update expects a User loaded through this repository within the same unit of work.");
+        }
+    }
 }

@@ -26,7 +26,6 @@ namespace UserManagementAPI.Infrastructure.Migrations
             modelBuilder.Entity("UserManagementAPI.Domain.Roles.Permission", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -49,7 +48,6 @@ namespace UserManagementAPI.Infrastructure.Migrations
             modelBuilder.Entity("UserManagementAPI.Domain.Roles.Role", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -72,7 +70,6 @@ namespace UserManagementAPI.Infrastructure.Migrations
             modelBuilder.Entity("UserManagementAPI.Domain.Roles.RolePermission", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -100,7 +97,6 @@ namespace UserManagementAPI.Infrastructure.Migrations
             modelBuilder.Entity("UserManagementAPI.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -125,7 +121,6 @@ namespace UserManagementAPI.Infrastructure.Migrations
             modelBuilder.Entity("UserManagementAPI.Domain.Users.UserRole", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 

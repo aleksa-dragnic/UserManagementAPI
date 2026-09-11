@@ -13,7 +13,7 @@ namespace UserManagementAPI.Api.Errors;
 ///
 ///   Validation.*                     422 Unprocessable Content
 ///   *.NotFound                       404 Not Found
-///   *.NotUnique, *.Already*          409 Conflict
+///   *NotUnique, *.Already*           409 Conflict
 ///   everything else                  400 Bad Request
 ///
 /// The code itself travels in the "errorCode" extension so a client can branch
@@ -33,8 +33,8 @@ internal static class ErrorMapping
             return StatusCodes.Status404NotFound;
         }
 
-        if (error.Code.EndsWith(".NotUnique", StringComparison.Ordinal) ||
-            error.Code.Contains(".Already", StringComparison.Ordinal))
+        if (error.Code.EndsWith("NotUnique", StringComparison.Ordinal) ||
+            error.Code.Contains("Already", StringComparison.Ordinal))
         {
             return StatusCodes.Status409Conflict;
         }

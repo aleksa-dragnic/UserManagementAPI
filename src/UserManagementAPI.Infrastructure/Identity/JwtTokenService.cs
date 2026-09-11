@@ -1,4 +1,6 @@
+using System.Buffers.Text;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 using Microsoft.Extensions.Options;
@@ -18,6 +20,8 @@ namespace UserManagementAPI.Infrastructure.Identity;
 /// </summary>
 public sealed class JwtTokenService : ITokenService
 {
+    private const int RefreshTokenSize = 32;
+
     private readonly JwtOptions _options;
     private readonly SigningCredentials _signingCredentials;
     private readonly JsonWebTokenHandler _handler = new();
@@ -65,4 +69,24 @@ public sealed class JwtTokenService : ITokenService
 
         return new IssuedToken(_handler.CreateToken(descriptor), expiresAt);
     }
+
+    /// <summary>
+    /// 256 bits from the OS random generator, base64url so it travels in JSON
+    /// and URLs without escaping. Opaque: it carries no claims and means nothing
+    /// without the row that stores its hash.
+    /// </summary>
+    public IssuedToken CreateRefreshToken()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(RefreshTokenSize);
+
+        return new IssuedToken(Base64Url.EncodeToString(bytes), DateTime.UtcNow.Add(_options.RefreshTokenLifetime));
+    }
+
+    /// <summary>
+    /// Plain SHA-256. The token is already 256 random bits, so there is nothing
+    /// for a slow hash to defend against — the point is that the table never
+    /// holds the value a client presents.
+    /// </summary>
+    public string HashRefreshToken(string refreshToken) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken)));
 }

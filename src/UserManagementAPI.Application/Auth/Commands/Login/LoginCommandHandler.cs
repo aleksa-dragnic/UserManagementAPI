@@ -5,7 +5,7 @@ using UserManagementAPI.Domain.Users;
 namespace UserManagementAPI.Application.Auth.Commands.Login;
 
 /// <summary>
-/// Verifies credentials and issues an access token. Two properties matter more
+/// Verifies credentials and issues a token pair. Two properties matter more
 /// than the happy path: the response for an unknown email and for a wrong
 /// password is the same error, and it takes the same time — a password is
 /// verified either way, against a decoy hash when there is no user. A
@@ -14,8 +14,8 @@ namespace UserManagementAPI.Application.Auth.Commands.Login;
 public sealed class LoginCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
-    IPermissionLookup permissionLookup,
-    ITokenService tokenService) : ICommandHandler<LoginCommand, AuthTokens>
+    TokenIssuer tokenIssuer,
+    IUnitOfWork unitOfWork) : ICommandHandler<LoginCommand, AuthTokens>
 {
     private const string DecoyPassword = "decoy-password-so-unknown-emails-cost-a-verification-too";
 
@@ -46,11 +46,16 @@ public sealed class LoginCommandHandler(
             return Result.Failure<AuthTokens>(canLogIn.Error);
         }
 
-        var permissions = await permissionLookup.GetPermissionCodesAsync(user.Id, cancellationToken);
+        var tokens = await tokenIssuer.IssueAsync(user, rotating: null, cancellationToken);
 
-        var accessToken = tokenService.CreateAccessToken(user, permissions);
+        if (tokens.IsFailure)
+        {
+            return tokens;
+        }
 
-        return Result.Success(new AuthTokens(accessToken.Value, accessToken.ExpiresAtUtc));
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return tokens;
     }
 
     private string DecoyHash() => s_decoyHash ??= passwordHasher.Hash(DecoyPassword);

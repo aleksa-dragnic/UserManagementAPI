@@ -19,4 +19,10 @@ public sealed record IssuedToken(string Value, DateTime ExpiresAtUtc);
 public interface ITokenService
 {
     IssuedToken CreateAccessToken(User user, IReadOnlyCollection<string> permissions);
+
+    /// <summary>An opaque, random refresh token. The raw value goes to the client; only its hash is stored.</summary>
+    IssuedToken CreateRefreshToken();
+
+    /// <summary>Deterministic, so a presented token can be looked up by hash.</summary>
+    string HashRefreshToken(string refreshToken);
 }

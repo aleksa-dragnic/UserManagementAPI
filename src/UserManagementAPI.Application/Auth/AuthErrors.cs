@@ -12,4 +12,12 @@ public static class AuthErrors
     public static readonly Error InvalidCredentials = new(
         "Auth.InvalidCredentials",
         "The email or password is incorrect.");
+
+    public static readonly Error InvalidRefreshToken = new(
+        "Auth.InvalidRefreshToken",
+        "The refresh token is not valid.");
+
+    public static readonly Error RefreshTokenReused = new(
+        "Auth.RefreshTokenReused",
+        "The refresh token was already exchanged. Every session for this account has been revoked.");
 }

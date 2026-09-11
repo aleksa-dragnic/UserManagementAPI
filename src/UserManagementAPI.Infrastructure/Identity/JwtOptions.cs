@@ -20,4 +20,7 @@ public sealed class JwtOptions
 
     /// <summary>Short on purpose: a stolen access token is useful for this long and no longer.</summary>
     public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(15);
+
+    /// <summary>How long a session can stay idle before the user must log in again.</summary>
+    public TimeSpan RefreshTokenLifetime { get; set; } = TimeSpan.FromDays(7);
 }

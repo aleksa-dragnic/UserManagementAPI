@@ -27,6 +27,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: "Host=db;Port=5432;Database=umapi;Username=umapi;Password=umapi"
+      # Local stack only. These values never leave this file: the deployed
+      # instance gets its own from the platform's secret store.
+      Jwt__SigningKey: "local-compose-signing-key-not-for-any-other-environment-0123456789abcdef"
+      Seed__AdministratorPassword: "Admin-Local-Compose-2026!"
     ports:
       - "8080:8080"
 

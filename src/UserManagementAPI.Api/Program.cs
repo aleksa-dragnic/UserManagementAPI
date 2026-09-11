@@ -19,7 +19,13 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+// Non-nullable reference types on the request contracts are not runtime
+// guarantees at the deserialization boundary; a missing field arrives as null.
+// Without this, MVC treats every such property as [Required] and answers 400
+// from model binding before the command validator ever runs. The validator is
+// the one source of shape errors and it answers 422.
+builder.Services.AddControllers(options =>
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 
 builder.Services.AddProblemDetails(options =>
 {

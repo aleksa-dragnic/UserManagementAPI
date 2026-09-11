@@ -6,6 +6,7 @@ using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Events;
+using UserManagementAPI.Infrastructure.Identity;
 using UserManagementAPI.Infrastructure.Persistence;
 using UserManagementAPI.Infrastructure.Persistence.Interceptors;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
@@ -52,6 +53,9 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+
+        // Interim: replaced by the Argon2id hasher in M4 PR14.
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 
         return services;
     }

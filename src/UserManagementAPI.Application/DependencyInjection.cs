@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using UserManagementAPI.Application.Abstractions;
+using UserManagementAPI.Application.Auth;
 using UserManagementAPI.Application.Behaviors;
 using UserManagementAPI.Application.Dispatching;
 
@@ -27,6 +28,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<IDispatcher, Dispatcher>();
+        services.AddScoped<TokenIssuer>();
 
         // Registration order is execution order: first registered is outermost.
         // Logging sees everything, including validation failures; validation

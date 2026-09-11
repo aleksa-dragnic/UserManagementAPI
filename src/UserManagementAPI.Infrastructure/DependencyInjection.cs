@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using UserManagementAPI.Application.Abstractions;
+using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Events;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         services.Configure<Argon2Options>(configuration.GetSection(Argon2Options.SectionName));
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));

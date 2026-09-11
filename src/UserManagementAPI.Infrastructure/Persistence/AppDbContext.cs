@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using UserManagementAPI.Application.Abstractions;
+using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
@@ -21,6 +22,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Role> Roles => Set<Role>();
 
     public DbSet<Permission> Permissions => Set<Permission>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

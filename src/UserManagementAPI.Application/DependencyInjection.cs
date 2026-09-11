@@ -9,8 +9,8 @@ using UserManagementAPI.Application.Dispatching;
 namespace UserManagementAPI.Application;
 
 /// <summary>
-/// Registers the dispatcher, the behaviors, the validators and every handler in
-/// this assembly. Called once from Program.cs. Handlers are found by scanning
+/// Registers the dispatcher, the behaviors, the validators and every command,
+/// query and domain event handler in this assembly. Called once from Program.cs. Handlers are found by scanning
 /// rather than listed by hand, so adding a use case means adding a folder, not
 /// editing a registration list that is easy to forget.
 /// </summary>
@@ -20,7 +20,8 @@ public static class DependencyInjection
     [
         typeof(ICommandHandler<>),
         typeof(ICommandHandler<,>),
-        typeof(IQueryHandler<,>)
+        typeof(IQueryHandler<,>),
+        typeof(IDomainEventHandler<>)
     ];
 
     public static IServiceCollection AddApplication(this IServiceCollection services)

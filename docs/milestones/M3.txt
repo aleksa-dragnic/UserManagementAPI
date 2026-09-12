@@ -1,0 +1,259 @@
+================================================================================
+M3 — APPLICATION AND WRITE PATH
+Guide for PR10, PR11, PR12, PR13.
+Read alongside docs/BUILD-PLAN.md sections 6.3 and 6.5.
+================================================================================
+
+GOAL OF THIS MILESTONE
+  Wire the write path end to end: an HTTP request becomes a command, passes
+  through a behavior pipeline, reaches the aggregate, and commits. By the end, a
+  user can be created, updated, locked and assigned a role over HTTP.
+
+RULES THAT APPLY TO ALL FOUR PRs
+  - A handler contains no business rule. If an "if" in a handler expresses a
+    policy, it belongs in the aggregate.
+  - Commands and queries are never serialized. HTTP contracts are separate
+    types in the Api project.
+  - Validation of shape lives in FluentValidation. Validation of invariants
+    lives in the domain. They are not the same thing and both exist.
+  - Every PR follows the seven-step loop in BUILD-PLAN.md section 7.
+
+
+================================================================================
+PR10 — feat/application-dispatcher
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/application-dispatcher
+
+STEP 2  Files under src\UserManagementAPI.Application\Abstractions\
+
+    ICommand.cs           ICommand and ICommand<TResponse>, both markers.
+    IQuery.cs             IQuery<TResponse>.
+    ICommandHandler.cs    ICommandHandler<TCommand> returning Result and
+                          ICommandHandler<TCommand, TResponse> returning
+                          Result<TResponse>.
+    IQueryHandler.cs      IQueryHandler<TQuery, TResponse> returning
+                          Result<TResponse>.
+    IDispatcher.cs        SendAsync for commands, QueryAsync for queries.
+    IUnitOfWork.cs        SaveChangesAsync. Implemented in Infrastructure.
+    ICurrentUser.cs       UserId and IsAuthenticated. Implemented in Api in M4.
+
+STEP 3  The dispatcher
+    src\UserManagementAPI.Application\Dispatching\Dispatcher.cs
+        Resolves the handler from IServiceProvider by closed generic type, then
+        walks the registered behaviors in order, innermost last. Roughly eighty
+        lines. This is deliberate — see ADR 0003.
+
+    src\UserManagementAPI.Application\DependencyInjection.cs
+        AddApplication(): scans the assembly and registers every closed
+        ICommandHandler and IQueryHandler implementation, plus the dispatcher.
+        Called from Program.cs.
+
+STEP 4  Tests in tests\UserManagementAPI.Application.UnitTests\
+    Delete UnitTest1.cs.
+    The dispatcher resolves the correct handler for a command type.
+    An unregistered command type throws a clear exception, not a null reference.
+    Behaviors execute in registration order and wrap the handler.
+
+STEP 5  Verify, commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    A command can be dispatched to a handler with no library in between.
+
+
+================================================================================
+PR11 — feat/application-behaviors
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/application-behaviors
+
+STEP 2  Packages
+    dotnet add src\UserManagementAPI.Application package FluentValidation
+    dotnet add src\UserManagementAPI.Application package FluentValidation.DependencyInjectionExtensions
+
+STEP 3  Files under src\UserManagementAPI.Application\Behaviors\
+
+    LoggingBehavior.cs
+        Logs the command type on entry, and on exit logs success or the failure
+        Error code with the elapsed time. Never logs the command payload — it
+        carries passwords.
+
+    ValidationBehavior.cs
+        Resolves every IValidator for the command type, runs them, and returns
+        a failure Result carrying the validation errors. It does not throw:
+        a validation failure is an expected outcome, not an exception.
+
+    TransactionBehavior.cs
+        Commands only, never queries. Wraps the handler in a transaction
+        obtained through Database.CreateExecutionStrategy().ExecuteAsync,
+        because EnableRetryOnFailure is on from M2 and a bare BeginTransaction
+        throws at runtime with a retrying strategy.
+
+STEP 4  Error to HTTP mapping
+    src\UserManagementAPI.Api\Errors\ValidationExceptionHandler.cs and
+    src\UserManagementAPI.Api\Extensions\ResultExtensions.cs
+        A failed Result becomes a ProblemDetails response. Map by error code
+        family: validation -> 422, not found -> 404, conflict -> 409, everything
+        else -> 400. Register the specific handlers ahead of
+        GlobalExceptionHandler.
+
+STEP 5  Tests
+    ValidationBehavior returns a failure and never calls the handler when a
+    validator fails.
+    TransactionBehavior commits on success and rolls back on a failed Result,
+    not only on an exception.
+    LoggingBehavior does not write the command payload.
+
+STEP 6  Verify, commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    Cross-cutting concerns are in behaviors. No handler opens a transaction or
+    runs a validator itself.
+
+
+================================================================================
+PR12 — feat/users-write-endpoints
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/users-write-endpoints
+
+STEP 2  Packages
+    dotnet add src\UserManagementAPI.Api package Riok.Mapperly
+
+STEP 3  Application files, one folder per use case
+    src\UserManagementAPI.Application\Users\Commands\RegisterUser\
+        RegisterUserCommand.cs      record with Email, FirstName, LastName,
+                                    Password
+        RegisterUserCommandHandler.cs
+                                    Checks ExistsByEmailAsync -> conflict.
+                                    Builds the value objects, calls
+                                    User.Register, adds to the repository,
+                                    saves, returns the new id.
+        RegisterUserCommandValidator.cs
+                                    Shape only: required, lengths, password
+                                    policy.
+
+    Repeat the same three-file shape for:
+        UpdateUser\      name and email change
+        LockUser\        and UnlockUser
+        AssignRole\      and RemoveRole
+
+STEP 4  Api files
+    src\UserManagementAPI.Api\Contracts\V1\
+        RegisterUserRequest.cs, UpdateUserRequest.cs, AssignRoleRequest.cs
+        These are the versioned public contract. They are not the commands.
+
+    src\UserManagementAPI.Api\Mapping\UserRequestMapper.cs
+        Mapperly partial class, request -> command.
+
+    src\UserManagementAPI.Api\Controllers\V1\UsersController.cs
+        POST   /api/v1/users               201 + Location
+        PUT    /api/v1/users/{id}          204
+        POST   /api/v1/users/{id}/lock     204
+        POST   /api/v1/users/{id}/roles    204
+        DELETE /api/v1/users/{id}/roles/{roleId}   204
+        Each action: map request to command, dispatch, convert Result to an
+        ActionResult. Nothing else.
+
+STEP 5  Verify by hand
+    dotnet run --project src\UserManagementAPI.Api
+    Open http://localhost:5085/scalar and exercise each endpoint.
+    Confirm: a duplicate email returns 409, a malformed email returns 422 with
+    problem details, a successful create returns 201 with a Location header.
+
+STEP 6  Tests
+    Handler unit tests with a faked repository for each command, covering the
+    success path and every failure path.
+    Integration test: register a user, reload it from a fresh context.
+
+STEP 7  Commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    All five write endpoints work. No business rule sits in a controller or a
+    handler. Every failure returns problem details with the correct status.
+
+
+================================================================================
+PR13 — feat/outbox
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/outbox
+
+STEP 2  Why this exists
+    Domain events run inside the transaction and are for this service. Anything
+    that must reach the outside world — an email, another service — cannot run
+    inside the transaction, because the transaction may still roll back. The
+    outbox writes the intent to a table in the same transaction and a worker
+    publishes it afterwards. That gives at-least-once delivery without a
+    two-phase commit.
+
+STEP 3  Files
+    src\UserManagementAPI.Infrastructure\Outbox\OutboxMessage.cs
+        Id, Type, Payload as jsonb, OccurredOnUtc, ProcessedOnUtc, Attempts,
+        Error.
+
+    Configurations\OutboxMessageConfiguration.cs
+        Table outbox_messages. Index on ProcessedOnUtc for the poll query.
+
+    Outbox\OutboxWriter.cs
+        Called from domain event handlers that need to publish outward.
+        Serializes the event and inserts it through the same DbContext, so it
+        joins the ambient transaction.
+
+    Outbox\OutboxProcessor.cs
+        BackgroundService. Polls unprocessed messages in small batches,
+        publishes, marks processed. On failure: increment Attempts, record the
+        error, back off exponentially, and stop retrying after a configured
+        ceiling so one poison message cannot block the queue.
+
+    Migration
+        dotnet ef migrations add AddOutbox `
+          --project src\UserManagementAPI.Infrastructure `
+          --startup-project src\UserManagementAPI.Api
+
+STEP 4  Application handler
+    src\UserManagementAPI.Application\Users\EventHandlers\
+        A UserRegisteredDomainEvent handler that writes an outbox message. The
+        actual publisher can be a logging stub for now — the pattern is the
+        point, not the transport. Say so in the PR description rather than
+        pretending there is a message broker.
+
+STEP 5  Tests
+    A message is written in the same transaction as the user, and is absent
+    when the transaction rolls back.
+    The processor marks a message processed exactly once.
+    A failing message increments Attempts and is retried, then abandoned at the
+    ceiling.
+
+STEP 6  Verify, commit, push, PR, merge, clean up.
+
+STEP 7  Close the milestone
+    git tag -a v0.4.0 -m "M3: application layer and write path — dispatcher, behaviors, user commands, outbox"
+    git push origin v0.4.0
+
+DEFINITION OF DONE FOR M3
+    The write path works end to end over HTTP.
+    Handlers orchestrate and nothing more.
+    Transactions and validation are handled once, in behaviors.
+    The outbox is transactional and has a retry ceiling.
+
+
+================================================================================
+ADRs TO WRITE DURING M3
+================================================================================
+    0003  CQRS with a hand-written dispatcher instead of a mediator library
+    0008  Outbox pattern for events that leave the service
+    0011  HTTP contracts kept separate from application commands
+    0014  Mapperly for compile-time mapping

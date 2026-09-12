@@ -139,7 +139,10 @@ app.MapControllers();
 
 app.MapApiHealthChecks();
 
-if (app.Environment.IsDevelopment())
+// The documentation is what makes a deployed instance a demo rather than a
+// screenshot, so it can be switched on outside development — deliberately, by
+// configuration, and off by default.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue("OpenApi:Enabled", false))
 {
     app.MapOpenApi().WithDocumentPerVersion();
     app.MapScalarApiReference("/scalar", options => options

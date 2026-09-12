@@ -9,7 +9,6 @@ using UserManagementAPI.Application.Users.Commands.LockUser;
 using UserManagementAPI.Application.Users.Commands.RemoveRole;
 using UserManagementAPI.Application.Users.Commands.UnlockUser;
 using UserManagementAPI.Application.Users.Queries.GetUserById;
-using UserManagementAPI.Application.Users.Queries.GetUsers;
 using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.Api.Controllers.V1;
@@ -28,19 +27,30 @@ namespace UserManagementAPI.Api.Controllers.V1;
 [Produces("application/json")]
 public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {
-    /// <summary>Lists users, ordered by email.</summary>
+    /// <summary>
+    /// Lists users a page at a time, optionally filtered by status, searched by
+    /// email or name, and sorted. Paging metadata is in the X-Pagination header.
+    /// </summary>
     [HttpGet]
     [HasPermission(PermissionCodes.UsersRead)]
     [ProducesResponseType<IReadOnlyList<UserResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] UserQueryParameters parameters,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.QueryAsync(new GetUsersQuery(), cancellationToken);
+        var result = await dispatcher.QueryAsync(parameters.ToQuery(), cancellationToken);
 
-        return result.IsSuccess
-            ? Ok(result.Value.Select(user => user.ToResponse()).ToList())
-            : result.ToProblem(HttpContext);
+        if (result.IsFailure)
+        {
+            return result.ToProblem(HttpContext);
+        }
+
+        PaginationHeader.Write(Response, result.Value.MetaData);
+
+        return Ok(result.Value.Items.Select(user => user.ToResponse()).ToList());
     }
 
     /// <summary>Returns one user with the roles they hold.</summary>

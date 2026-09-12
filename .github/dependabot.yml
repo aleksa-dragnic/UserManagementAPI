@@ -1,0 +1,53 @@
+# Weekly, grouped, and aimed at main. Ungrouped NuGet updates on a solution
+# this size produce a dozen pull requests a week, which is how people learn to
+# ignore them.
+#
+# The github-actions ecosystem is the one that earns its keep here: the Node 20
+# runtime removal that broke nothing only because it was caught by hand would
+# have arrived as a pull request months earlier.
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Belgrade
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    # First matching group wins, so the narrow ones are listed first.
+    groups:
+      testing:
+        patterns:
+          - "xunit*"
+          - "FluentAssertions"
+          - "NSubstitute"
+          - "Testcontainers*"
+          - "coverlet.collector"
+          - "Microsoft.NET.Test.Sdk"
+          - "Microsoft.AspNetCore.Mvc.Testing"
+      opentelemetry:
+        patterns:
+          - "OpenTelemetry*"
+          - "Npgsql.OpenTelemetry"
+      versioning:
+        patterns:
+          - "Asp.Versioning*"
+      framework:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+          - "Npgsql*"
+          - "EFCore.*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci

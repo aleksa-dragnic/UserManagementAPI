@@ -2,6 +2,7 @@ using Asp.Versioning;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 using UserManagementAPI.Api.Contracts.V1;
 using UserManagementAPI.Api.Extensions;
@@ -21,6 +22,7 @@ namespace UserManagementAPI.Api.Controllers.V1;
 [Route("api/v{version:apiVersion}/auth")]
 [Produces("application/json")]
 [AllowAnonymous]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public sealed class AuthController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Exchanges an email and password for a token pair.</summary>

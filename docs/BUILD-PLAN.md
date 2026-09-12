@@ -591,7 +591,7 @@ that made the change.
 | §7 M5 | An unsupported version returns 400 | 404. With the version in the URL segment, `Asp.Versioning` treats an unknown version as an address that does not exist |
 | §7 M6 | A malformed body returns 422 | 400. A body that is not JSON never becomes a command, so no validator can name a field; 422 is kept for a well-formed body with bad values |
 | §7 M5 | Data shaping was never planned, and is explicitly declined | ADR 0017 records why: a shaped response no longer matches the OpenAPI schema |
-| §8 | Fifteen ADRs | Seventeen. ADR 0016 (query handlers) and 0017 (no data shaping) came out of M5 |
+| §8 | Fifteen ADRs | Eighteen. ADR 0016 (query handlers) and 0017 (no data shaping) came out of M5; 0018 (JSON console logs in production) came out of a CodeQL finding after `v1.0.0` |
 | §13 | Deploy to Fly.io or Render | Render, Frankfurt, free tier, with Neon as the database |
 | M5 | `RolesController` appears in no milestone | Added in M5 PR18: a client needs a role id to assign one, and `roles.read` protected nothing without it |
 | §6.2 | An architecture test asserting the layer rules | Added after `v1.0.0`, and in two projects rather than one: the controller rule needs a project that references both `Api` and `Infrastructure`. Until then the rules were greps inside a helper script that is never committed, so nothing enforced them. Test baseline 266 → 269 |

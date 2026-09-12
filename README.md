@@ -89,7 +89,7 @@ while it wakes up. The database is Neon, also free tier.
 **Operations**
 - OpenTelemetry traces and metrics, a correlation id in every log line and
   response, liveness and readiness split
-- Structured logging with Serilog
+- Structured logging with Serilog, rendered as JSON in production so a log record cannot be forged from a request path
 - Multi-stage Docker build, compose stack with PostgreSQL and an OTLP collector
 - GitHub Actions: build with warnings as errors, tests against a real
   PostgreSQL in a container, coverage

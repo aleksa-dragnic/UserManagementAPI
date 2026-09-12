@@ -1,3 +1,5 @@
+using Asp.Versioning;
+
 using Microsoft.AspNetCore.Mvc;
 
 using UserManagementAPI.Api.Authorization;
@@ -24,7 +26,8 @@ namespace UserManagementAPI.Api.Controllers.V1;
 /// anywhere in the project.
 /// </summary>
 [ApiController]
-[Route("api/v1/users")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/users")]
 [Produces("application/json")]
 public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {

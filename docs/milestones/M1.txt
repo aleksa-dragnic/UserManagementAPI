@@ -1,0 +1,230 @@
+================================================================================
+M1 — DOMAIN
+Guide for PR4, PR5, PR6.  Read alongside docs/BUILD-PLAN.md sections 6.3 and 6.8.
+================================================================================
+
+GOAL OF THIS MILESTONE
+  Build the domain model. By the end, UserManagementAPI.Domain compiles with
+  zero package references and every public method on every aggregate is covered
+  by a unit test.
+
+RULES THAT APPLY TO ALL THREE PRs
+  - Domain references nothing. No EF Core, no ASP.NET, no third-party package.
+    Verify after every PR:
+        Select-String -Path src\UserManagementAPI.Domain\*.csproj -Pattern "PackageReference"
+    It must return nothing.
+  - No public setters on entities. State changes only through methods.
+  - Invariants are enforced where the state lives, not in a validator.
+  - Every PR follows the seven-step loop in BUILD-PLAN.md section 7.
+
+
+================================================================================
+PR4 — feat/domain-seedwork
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/domain-seedwork
+
+STEP 2  Carry-over items from M0
+    Create Directory.Packages.props in the repository root with
+    ManagePackageVersionsCentrally set to true and an empty ItemGroup, then move
+    every Version attribute out of the .csproj files into it.
+    Add a LICENSE file (MIT).
+
+STEP 3  Test packages
+    dotnet add tests\UserManagementAPI.Domain.UnitTests package FluentAssertions
+
+STEP 4  Files to create, all under src\UserManagementAPI.Domain\Common\
+
+    Entity.cs
+        Abstract base. Id of type Guid, protected set. Equality by Id and
+        concrete type, not by reference. Override GetHashCode. Operators
+        == and != .
+
+    AggregateRoot.cs
+        Inherits Entity. Holds a private List<IDomainEvent>. Exposes
+        DomainEvents as IReadOnlyCollection. Protected RaiseDomainEvent method.
+        Public ClearDomainEvents, called by the persistence layer in M2.
+
+    IDomainEvent.cs
+        Marker interface with an OccurredOnUtc property.
+
+    ValueObject.cs
+        Abstract base. Abstract IEnumerable<object?> GetEqualityComponents().
+        Equality by the sequence of components. Operators == and != .
+
+    Enumeration.cs
+        Abstract base with int Id and string Name. Static GetAll<T>() using
+        reflection over public static fields. FromId and FromName lookups that
+        throw when no match exists. Implements IComparable.
+
+    Error.cs
+        Record with Code and Description. Static Error.None. Predefined
+        NullValue error.
+
+    Result.cs and Result<T>.cs
+        Result: IsSuccess, IsFailure, Error. Static Success() and
+        Failure(Error). Result<T> adds a Value that throws when accessed on a
+        failed result. Implicit conversion from T to Result<T>.
+
+    DomainException.cs
+        Exception type carrying an Error. Thrown by aggregates when an
+        invariant is violated from a path that cannot return a Result.
+
+STEP 5  Tests in tests\UserManagementAPI.Domain.UnitTests\Common\
+    Delete UnitTest1.cs — this project now has real tests.
+    Cover: two entities with the same Id are equal; two entities of different
+    types with the same Id are not; value objects with identical components are
+    equal and have the same hash code; Enumeration.FromId returns the right
+    instance and throws on an unknown id; Result<T>.Value throws on failure.
+
+STEP 6  Verify
+    dotnet build UserManagementAPI.sln
+    dotnet test UserManagementAPI.sln --configuration Release
+    Select-String -Path src\UserManagementAPI.Domain\*.csproj -Pattern "PackageReference"
+
+STEP 7  Commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    Domain has no package references. Every base type has tests. Build is green
+    with warnings as errors.
+
+
+================================================================================
+PR5 — feat/domain-user-aggregate
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/domain-user-aggregate
+
+STEP 2  Files to create under src\UserManagementAPI.Domain\Users\
+
+    Email.cs                 ValueObject. Private constructor. Static Create
+                             returning Result<Email>. Normalises to lowercase
+                             and trims. Rejects empty, over 256 characters, and
+                             anything without a single @ with text on both
+                             sides. Do not write an RFC 5322 regex — a simple
+                             structural check plus a verification email is what
+                             production systems actually do, and that reasoning
+                             belongs in the PR description.
+
+    PersonName.cs            ValueObject with First and Last. Each required,
+                             trimmed, max 100 characters.
+
+    PasswordHash.cs          ValueObject wrapping the hash string. No hashing
+                             logic here — the algorithm belongs to
+                             Infrastructure. This type exists so a raw password
+                             string can never be assigned where a hash is
+                             expected.
+
+    UserStatus.cs            Enumeration. Instances: Pending(1), Active(2),
+                             Locked(3), Deactivated(4).
+
+    User.cs                  AggregateRoot.
+                             Private parameterless constructor for EF Core.
+                             Private full constructor.
+                             Static Register(Email, PersonName, PasswordHash)
+                             returning Result<User>: sets status Pending,
+                             raises UserRegisteredDomainEvent.
+                             VerifyEmail(): Pending -> Active, otherwise fails.
+                             ChangeEmail(Email): fails when Deactivated.
+                             ChangeName(PersonName).
+                             Lock() / Unlock(): raises UserLockedDomainEvent.
+                             Deactivate().
+                             CreatedAtUtc, UpdatedAtUtc.
+                             A private List<UserRole> exposed as
+                             IReadOnlyCollection — never a settable collection.
+
+    IUserRepository.cs       GetByIdAsync, GetByEmailAsync, ExistsByEmailAsync,
+                             Add, Update. No IQueryable on this interface.
+                             Queries do not go through the repository.
+
+    Events\UserRegisteredDomainEvent.cs
+    Events\UserLockedDomainEvent.cs
+                             Records implementing IDomainEvent, carrying the
+                             user id and nothing that could go stale.
+
+STEP 3  Tests under tests\UserManagementAPI.Domain.UnitTests\Users\
+    Email.Create rejects each invalid shape and normalises case.
+    Register produces a Pending user and raises exactly one domain event.
+    VerifyEmail moves Pending to Active and fails from every other state.
+    Lock on an already locked user fails.
+    ChangeEmail on a deactivated user fails.
+    DomainEvents is not mutable from outside the aggregate.
+
+STEP 4  Verify, commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    Not one public setter on User. Every state transition has a test for both
+    the allowed and the rejected path.
+
+
+================================================================================
+PR6 — feat/domain-roles
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/domain-roles
+
+STEP 2  Files to create under src\UserManagementAPI.Domain\Roles\
+
+    Permission.cs            Entity. Code such as "users.read", "users.write",
+                             "roles.manage". Codes are the unit of
+                             authorization in M4 — roles are only containers.
+
+    Role.cs                  AggregateRoot. Name. Private List<RolePermission>
+                             exposed read-only. AddPermission / RemovePermission
+                             with the invariant that a permission cannot be
+                             added twice.
+
+    RolePermission.cs        Entity linking RoleId and PermissionId.
+
+    IRoleRepository.cs       GetByIdAsync, GetByNameAsync, ExistsAsync.
+
+STEP 3  Add to User.cs in src\UserManagementAPI.Domain\Users\
+
+    UserRole.cs              Entity holding UserId, RoleId, AssignedAtUtc.
+                             It holds a RoleId, never a Role navigation
+                             property. Role is a separate aggregate; crossing
+                             that line with a navigation property is what
+                             collapses aggregates into one graph.
+
+    On User:
+        AssignRole(Guid roleId)   fails when already assigned.
+        RemoveRole(Guid roleId)   fails when it is the last remaining role.
+
+STEP 4  Tests
+    Role rejects a duplicate permission.
+    AssignRole twice fails the second time.
+    RemoveRole on a user with one role fails.
+    UserRole exposes no Role navigation property — assert by reflection so the
+    rule is enforced by the build, not by memory.
+
+STEP 5  Verify, commit, push, PR, merge, clean up.
+
+STEP 6  Close the milestone
+    git tag -a v0.2.0 -m "M1: domain model — seedwork, user aggregate, roles and permissions"
+    git push origin v0.2.0
+
+DEFINITION OF DONE FOR M1
+    Domain project has zero package references.
+    Both aggregates enforce every invariant listed above.
+    No aggregate holds a navigation property to another aggregate.
+    All domain tests pass in CI.
+
+
+================================================================================
+ADRs TO WRITE DURING M1
+================================================================================
+    0004  The domain model is the persistence model; no separate DB entities
+    0005  Value objects mapped as EF Core owned types
+    0006  Enumeration classes instead of C# enums for domain states
+
+    Write each one as Context / Decision / Consequences in docs/adr/ in the same
+    PR that implements it, not afterwards.

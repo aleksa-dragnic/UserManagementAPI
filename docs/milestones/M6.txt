@@ -1,0 +1,219 @@
+================================================================================
+M6 — HARDENING AND DELIVERY
+Guide for PR23, PR24, PR25, PR26.
+Read alongside docs/BUILD-PLAN.md sections 9, 12 and 13.
+================================================================================
+
+GOAL OF THIS MILESTONE
+  Prove the whole thing works from the outside, close the obvious holes, make
+  it observable, and ship it so someone can open a URL and use it.
+
+RULES THAT APPLY TO ALL FOUR PRs
+  - This milestone is what turns a good repository into a finished one. Do not
+    let it slip in favour of new features — a half-finished main is worse than a
+    smaller finished one.
+  - Every PR follows the seven-step loop in BUILD-PLAN.md section 7.
+
+
+================================================================================
+PR23 — test/functional-suite
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c test/functional-suite
+
+STEP 2  Packages
+    dotnet add tests\UserManagementAPI.IntegrationTests package Microsoft.AspNetCore.Mvc.Testing
+
+STEP 3  Files
+    tests\UserManagementAPI.IntegrationTests\ApiFactory.cs
+        WebApplicationFactory<Program>, which works because Program was made
+        partial in M0 PR3. Overrides the connection string to point at the
+        Testcontainers database from M2 PR8, so functional tests share the same
+        container rather than starting a second one.
+
+    tests\UserManagementAPI.IntegrationTests\Functional\
+        One file per flow.
+
+STEP 4  Flows to cover, over real HTTP
+    Register, log in, call a protected endpoint with the token.
+    Refresh, then replay the old refresh token and confirm the chain is revoked.
+    A locked user cannot log in.
+    A user without the permission gets 403 on a write endpoint.
+    Paging, filtering and sorting return what the query string asked for.
+    Conditional GET returns 304 on the second call.
+    A malformed body returns 422 with problem details, not a 500.
+    An unhandled failure returns 500 problem details with a traceId and leaks no
+    stack trace.
+
+    The last one matters more than it looks. It is the test that proves
+    GlobalExceptionHandler does what M0 claimed it does.
+
+STEP 5  Verify, commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    Every user-visible flow is covered end to end, over HTTP, against a real
+    database.
+
+
+================================================================================
+PR24 — feat/hardening
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/hardening
+
+STEP 2  Rate limiting
+    Built into ASP.NET Core; no package needed. Register UseRateLimiter after
+    UseRouting, because per-endpoint policies need the resolved endpoint.
+
+    Policies:
+        auth        strict, keyed by IP — login and refresh are the endpoints
+                    worth brute-forcing
+        read        generous, keyed by authenticated user id
+        write       moderate, keyed by authenticated user id
+
+    Rejection returns 429 with a Retry-After header and a problem details body,
+    so a client is told how to behave rather than just refused.
+
+STEP 3  Security headers
+    Middleware setting X-Content-Type-Options, X-Frame-Options,
+    Referrer-Policy, and a Content-Security-Policy. HSTS in production only.
+
+STEP 4  CORS
+    Replace any permissive policy with a named one reading allowed origins from
+    configuration. Expose X-Pagination so a browser client can read it.
+
+STEP 5  Request limits
+    Cap the request body size. Cap collection page size — already done in M5
+    PR19, confirm it is enforced.
+
+STEP 6  Tests
+    Exceeding the auth policy returns 429 with Retry-After.
+    Security headers are present on every response.
+    A disallowed origin is rejected by CORS.
+
+STEP 7  Verify, commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    Login is rate limited, headers are set, CORS is explicit.
+
+
+================================================================================
+PR25 — feat/observability
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c feat/observability
+
+STEP 2  Packages
+    dotnet add src\UserManagementAPI.Api package OpenTelemetry.Extensions.Hosting
+    dotnet add src\UserManagementAPI.Api package OpenTelemetry.Instrumentation.AspNetCore
+    dotnet add src\UserManagementAPI.Api package OpenTelemetry.Instrumentation.Http
+    dotnet add src\UserManagementAPI.Api package Npgsql.OpenTelemetry
+    dotnet add src\UserManagementAPI.Api package OpenTelemetry.Exporter.OpenTelemetryProtocol
+
+STEP 3  Work
+    Tracing across ASP.NET Core, HttpClient and Npgsql, so a slow request can be
+    attributed to the query that caused it.
+    Metrics: request duration, error rate, database call duration.
+    A correlation id enriched into every Serilog entry and returned in the
+    response, so a user-reported error maps to a log line.
+
+    Health checks: extend /health with a database check. Split into /health/live
+    and /health/ready — liveness must not fail because the database is briefly
+    unavailable, or an orchestrator will restart a healthy process.
+
+STEP 4  Verify
+    Add an OTLP collector to docker-compose, or export to the console in
+    development. Make one request and confirm a trace with database spans.
+
+STEP 5  Commit, push, PR, merge, clean up.
+
+DEFINITION OF DONE
+    One request produces one trace with database spans, and its log lines carry
+    the same correlation id.
+
+
+================================================================================
+PR26 — docs/release-1.0
+================================================================================
+
+STEP 1  Branch
+    git switch main
+    git pull
+    git switch -c docs/release-1.0
+
+STEP 2  README — this is the deliverable
+    Most people who open the repository will read the README and nothing else.
+    Build it with the same care as the code.
+
+        1. One paragraph on what the API does
+        2. The layer and dependency diagram, exported as SVG
+        3. Feature list grouped: domain modelling, security, HTTP surface,
+           operations
+        4. Quick start — clone, one docker compose up, one URL, working in
+           under two minutes
+        5. Screenshot of the Scalar UI
+        6. Links to architecture.md and the ADR index
+        7. Build and coverage badges
+        8. Tech stack table
+
+    Get the quick start right above everything else. If someone has to configure
+    a database before they see anything, they close the tab.
+
+STEP 3  Documentation
+    docs\architecture.md      Layers, both request paths, model types, aggregate
+                              boundaries, schema. The diagrams already exist —
+                              export them rather than describing them in prose.
+    docs\adr\README.md        Index of all fifteen ADRs.
+    Confirm every ADR promised in M1 through M5 is actually written.
+
+STEP 4  Request collection
+    UserManagementAPI.http in the repository root, covering every endpoint in
+    order: login, capture the token, then each protected call.
+
+STEP 5  Deploy
+    Neon free tier is already the database. Put the container on Fly.io or
+    Render. Set every secret as an environment variable — signing key,
+    connection string, seeded admin password.
+
+    Create a read-only demo account and put its credentials in the README, so
+    anyone can log in and click through Scalar. An unreachable project is a
+    screenshot; a reachable one is a demo.
+
+STEP 6  Release
+    git tag -a v1.0.0 -m "v1.0.0 — user and access management API"
+    git push origin v1.0.0
+
+    Write GitHub release notes summarising what the API does, not a changelog of
+    commits.
+
+STEP 7  Repository presentation
+    Pin the repository on your GitHub profile.
+    Confirm description and topics are set.
+    Open issues labelled "future" for multi-tenancy, OIDC and webhooks. Open,
+    reasoned issues look like planning; half-built features look like
+    abandonment.
+
+DEFINITION OF DONE FOR M6
+    v1.0.0 tagged, CI green, README complete with a working quick start, a live
+    instance anyone can log into, all fifteen ADRs written.
+
+
+================================================================================
+AFTER v1.0.0
+================================================================================
+    Write the CV bullets from the ADRs, not from the package list. "Modelled X,
+    chose Y over Z because W" survives a follow-up question in an interview; a
+    list of technologies does not.
+
+    Be accurate about what this is: a personal project built to a production
+    standard. Not "used in production", not "serving N users". The work stands
+    on its own, and overstating it is the only thing that could undermine it.

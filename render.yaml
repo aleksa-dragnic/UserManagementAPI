@@ -22,6 +22,12 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      # TLS terminates at the platform edge, which forwards plain HTTP.
+      # UseHttpsRedirection has to be told which port to redirect to; left to
+      # itself it logs "failed to determine the https port" and skips the
+      # redirect, which is what the first deploy did.
+      - key: ASPNETCORE_HTTPS_PORT
+        value: "443"
       - key: OpenApi__Enabled
         value: "true"
       - key: Database__MigrateOnStartup

@@ -1,3 +1,5 @@
+using Asp.Versioning;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +16,8 @@ namespace UserManagementAPI.Api.Controllers.V1;
 /// token is authenticating with it.
 /// </summary>
 [ApiController]
-[Route("api/v1/auth")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/auth")]
 [Produces("application/json")]
 [AllowAnonymous]
 public sealed class AuthController(IDispatcher dispatcher) : ControllerBase

@@ -480,3 +480,14 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+# Working notes kept on disk but deliberately outside the repository: they
+# describe how this repository was produced rather than what it is.
+/docs/WORKING-PROTOCOL.md
+/docs/milestones/
+/docs/migrations/
+
+# Per-pull-request helper scripts and their transcripts.
+apply-*.ps1
+check-repo*.ps1
+check-repo*.txt
+tree.txt

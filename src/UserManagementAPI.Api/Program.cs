@@ -49,7 +49,9 @@ builder.Services.AddControllers(options =>
         .OfType<SystemTextJsonOutputFormatter>()
         .First()
         .SupportedMediaTypes.Add(HateoasMediaTypes.Hateoas);
-});
+})
+.ConfigureApiBehaviorOptions(options =>
+    options.InvalidModelStateResponseFactory = ProblemDetailsResponses.FromModelState);
 
 builder.Services.AddSingleton<LinkFactory>();
 builder.Services.AddSingleton<UserLinkGenerator>();

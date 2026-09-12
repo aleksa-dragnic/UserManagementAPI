@@ -97,13 +97,15 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddHealthChecks();
+builder.Services.AddObservability(builder.Configuration);
 
 var app = builder.Build();
 
 await app.MigrateAndSeedAsync();
 
 app.UseForwardedHeaders();
+
+app.UseCorrelationId();
 
 app.UseSerilogRequestLogging();
 
@@ -135,7 +137,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapHealthChecks("/health");
+app.MapApiHealthChecks();
 
 if (app.Environment.IsDevelopment())
 {

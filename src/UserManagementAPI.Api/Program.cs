@@ -1,5 +1,7 @@
 using System.Diagnostics;
 
+using Asp.Versioning.OpenApi;
+
 using Scalar.AspNetCore;
 
 using Serilog;
@@ -51,7 +53,7 @@ builder.Services.AddProblemDetails(options =>
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddOpenApi();
+builder.Services.AddVersionedApi();
 
 builder.Services.AddHealthChecks();
 
@@ -77,10 +79,11 @@ app.MapHealthChecks("/health");
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().WithDocumentPerVersion();
     app.MapScalarApiReference("/scalar", options => options
         .WithTitle("UserManagementAPI")
-        .WithTheme(ScalarTheme.BluePlanet));
+        .WithTheme(ScalarTheme.BluePlanet)
+        .AddDocuments(ApiVersioningExtensions.Documents));
 }
 
 app.Run();

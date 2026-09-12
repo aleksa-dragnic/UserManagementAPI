@@ -1,3 +1,5 @@
+using Asp.Versioning;
+
 using Microsoft.AspNetCore.Mvc;
 
 using UserManagementAPI.Api.Authorization;
@@ -18,7 +20,8 @@ namespace UserManagementAPI.Api.Controllers.V1;
 /// HTTP is out of scope for v1.
 /// </summary>
 [ApiController]
-[Route("api/v1/roles")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/roles")]
 [Produces("application/json")]
 public sealed class RolesController(IDispatcher dispatcher) : ControllerBase
 {

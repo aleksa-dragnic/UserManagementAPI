@@ -1,6 +1,13 @@
+# Two ways to run this file. The default targets "dotnet run" in Development,
+# which uses the Neon dev branch and the administrator password from user
+# secrets. The compose stack changes both the port and the password, so swap in
+# the commented pair rather than only the host.
 @host = http://localhost:5085
-@adminEmail = admin@umapi.local
 @adminPassword = <Seed:AdministratorPassword from user secrets>
+# @host = http://localhost:8080
+# @adminPassword = Admin-Local-Compose-2026!
+
+@adminEmail = admin@umapi.local
 
 ### The API root: every other address is discoverable from here.
 GET {{host}}/api

@@ -47,92 +47,22 @@ It is deliberately narrow in scope and deep in execution. The domain is small en
 
 ---
 
-## 3. Local setup
+## 3. Prerequisites
 
-Everything below assumes Windows and the project root:
+- .NET 10 SDK — `dotnet --version` reports 10.x
+- Docker, for Testcontainers and for `docker compose up`
+- `dotnet tool install --global dotnet-ef`
 
-```
-C:\Users\chess\OneDrive\Desktop\UserManagementAPI
-```
-
-### 3.1 Prerequisites
-
-```powershell
-# Verify the SDK
-dotnet --version          # expect 10.x
-
-# Tooling
-dotnet tool install --global dotnet-ef
-dotnet tool install --global dotnet-outdated-tool
-```
-
-Also required: Docker Desktop (for Testcontainers and local runs), Git, and either Visual Studio 2026 or Rider.
-
-### 3.2 One note about OneDrive
-
-The project folder is inside OneDrive. OneDrive syncs `bin/` and `obj/` by default, which is slow and occasionally locks files mid-build. Exclude them once:
-
-1. OneDrive → Settings → Sync and backup → Advanced settings → Excluded folders.
-2. Or, simpler and more reliable: keep the repository outside OneDrive at `C:\src\UserManagementAPI` and let GitHub be the backup. Version control already is the backup.
-
-If the folder stays where it is, expect the occasional `MSB3021: Unable to copy file` during a build with a sync in flight. Retrying the build clears it.
-
-### 3.3 Create the folder and initialise
-
-```powershell
-cd "C:\Users\chess\OneDrive\Desktop"
-mkdir UserManagementAPI
-cd UserManagementAPI
-git init -b main
-dotnet new gitignore
-dotnet new editorconfig
-```
+That is the whole list. Nothing in the checkout needs configuring before
+`docker compose up -d --build` brings the stack up, and no secret is required to
+build or to run the tests — the integration suite starts its own PostgreSQL in a
+container. Section 5 covers the connection strings a workstation or a deployed
+instance needs.
 
 ---
-
 ## 4. Git
 
-### 4.1 One-time machine configuration
-
-```powershell
-git config --global user.name  "Aleksa Dragnic"
-git config --global user.email "aljosadragnic@gmail.com"
-git config --global init.defaultBranch main
-git config --global pull.rebase true
-git config --global core.autocrlf true
-```
-
-The email must match a verified email on the GitHub account, otherwise commits will not be attributed to the profile and the contribution graph stays empty.
-
-### 4.2 SSH key
-
-HTTPS with a token expires and interrupts work. SSH does not.
-
-```powershell
-ssh-keygen -t ed25519 -C "aljosadragnic@gmail.com"
-# Accept the default path, set a passphrase.
-
-Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub | Set-Clipboard
-```
-
-Paste into GitHub → Settings → SSH and GPG keys → New SSH key. Then verify:
-
-```powershell
-ssh -T git@github.com
-```
-
-### 4.3 Create the remote
-
-Create an **empty** repository on GitHub named `UserManagementAPI` — no README, no .gitignore, no license, because the local folder already has them. Then:
-
-```powershell
-git remote add origin git@github.com:aleksa-dragnic/UserManagementAPI.git
-git add .
-git commit -m "chore: initialise repository"
-git push -u origin main
-```
-
-### 4.4 Repository settings to apply immediately
+### 4.1 Repository settings to apply immediately
 
 - **Description:** "User and access management API — ASP.NET Core, PostgreSQL, clean architecture, CQRS."
 - **Topics:** `dotnet`, `aspnetcore`, `csharp`, `postgresql`, `clean-architecture`, `cqrs`, `ddd`, `rest-api`, `jwt`
@@ -141,7 +71,7 @@ git push -u origin main
 
 Branch protection matters more than it looks. It makes every change go through a PR, which produces a readable history someone can scroll through — and it prevents a tired 2 a.m. `git push --force` from erasing a week.
 
-### 4.5 Branch naming
+### 4.2 Branch naming
 
 ```
 feat/<area>-<short-description>      feat/domain-user-aggregate
@@ -153,7 +83,7 @@ chore/<short-description>            chore/bump-npgsql
 
 One branch per PR. One PR per unit of work from the plan in section 7. A branch lives for a day or two, never a week.
 
-### 4.6 Commit convention
+### 4.3 Commit convention
 
 Conventional Commits, enforced by habit rather than tooling:
 
@@ -182,7 +112,7 @@ Bad: `update stuff`, `fix bug`, `WIP`, `asdf`.
 
 The body answers *why*. The diff already shows *what*. Anyone reading the history later — including me in three months — needs the reason, not a restatement of the code.
 
-### 4.7 Commit rhythm
+### 4.4 Commit rhythm
 
 - Commit when a thought is complete and the build is green. Roughly every 30–90 minutes of work.
 - Never commit code that does not compile.
@@ -192,7 +122,7 @@ The body answers *why*. The diff already shows *what*. Anyone reading the histor
 - Squash-merge PRs into `main`, so `main` reads as one commit per unit of work.
 - Never force-push `main`. Force-push on a personal feature branch is fine.
 
-### 4.8 Pull request rules
+### 4.5 Pull request rules
 
 Every PR gets a description that answers three questions:
 
@@ -215,53 +145,31 @@ Tag a release at the end of every milestone: `v0.1.0`, `v0.2.0`, and `v1.0.0` wh
 
 ## 5. Neon PostgreSQL
 
-### 5.1 Project setup
+### 5.1 Connection strings and where they live
 
-1. Create a Neon project named `usermanagementapi`, region closest to you (`eu-central-1`).
-2. Neon creates a `main` branch. Create a second branch named `dev` from it.
-   - `dev` is what the local machine connects to.
-   - `main` is what a deployed instance would use.
-   - Branches are copy-on-write, so this costs nothing and means a bad migration locally cannot touch the other one.
-3. Set autosuspend to 5 minutes on the free tier.
-
-### 5.2 Connection strings
-
-Neon gives two endpoints, and the difference matters:
+Neon exposes two endpoints for the same database, and the difference matters:
 
 | Endpoint | Host contains | Use for |
 |---|---|---|
 | Pooled | `-pooler` | The running application |
 | Direct | no `-pooler` | `dotnet ef` migrations |
 
-The pooler runs in transaction mode and does not support the session-level operations EF Core uses when applying migrations. Using the pooled string for `dotnet ef database update` produces confusing intermittent failures.
+The pooler runs in transaction mode and does not support the session-level
+operations EF Core uses while applying a migration, so the pooled string turns
+`dotnet ef database update` into an intermittent failure that reads like
+anything but its cause. Both endpoints need `sslmode=require`.
 
-Both need `sslmode=require`.
+Two Neon branches, copy-on-write and therefore free: `dev` for a workstation,
+`main` for a deployed instance. A bad migration applied locally cannot reach the
+other one (ADR 0002).
 
-```
-Host=ep-xxxx-pooler.eu-central-1.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=***;SSL Mode=Require;Trust Server Certificate=true;Pooling=true;Maximum Pool Size=20
-```
-
-### 5.3 Where the connection string lives
-
-Never in `appsettings.json`. Never in a commit.
-
-**Local development** — user secrets, stored outside the repository:
-
-```powershell
-cd src\UserManagementAPI.Api
-dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:Default" "Host=ep-xxxx-pooler...;"
-dotnet user-secrets set "ConnectionStrings:Migrations" "Host=ep-xxxx...;"
-dotnet user-secrets set "Jwt:SigningKey" "<64+ random chars>"
-```
-
-**CI** — GitHub Actions repository secrets. Integration tests do not use Neon at all; they spin up PostgreSQL in a container via Testcontainers, so CI needs no database credentials.
-
-**A deployed instance** — environment variables, with the `ConnectionStrings__Default` double-underscore form.
-
-`appsettings.json` holds only non-secret configuration and keys with empty placeholder values, so the shape of the configuration is visible in the repository without the values.
-
-### 5.4 Resilience
+No connection string is in `appsettings.json` and none is in a commit.
+`appsettings.json` carries the non-secret configuration and empty placeholders,
+so the shape of it is visible in the repository without the values. Locally the
+values live in user secrets; a deployed instance takes them as environment
+variables in the `ConnectionStrings__Default` double-underscore form. CI needs no
+database credential at all.
+### 5.2 Resilience
 
 Neon autosuspends idle compute. The first request after a suspend takes a few hundred milliseconds to a couple of seconds while it resumes, and can fail outright. Enable retry:
 
@@ -323,7 +231,7 @@ Api ──────────► Application ──────────
 - `Infrastructure` references `Domain` and `Application`.
 - `Api` references `Application`, and `Infrastructure` **only in `Program.cs`** to wire the container. No controller may name an infrastructure type.
 
-The rule is enforceable, not just documented: an architecture test in `Application.UnitTests` asserts that no type in `Domain` depends on any type outside it. It fails the build if someone reaches through a layer.
+The rule is enforceable, not just documented. `LayeringTests` in `Application.UnitTests` asserts that `Domain` references nothing outside the base class library and that `Application` references neither EF Core nor ASP.NET; `ApiLayeringTests` in `UserManagementAPI.IntegrationTests` asserts that no controller names an infrastructure type, and sits there because that is the only project referencing both `Api` and `Infrastructure`. All three run in CI, so reaching through a layer fails the build.
 
 ### 6.3 Project internals
 
@@ -679,10 +587,12 @@ that made the change.
 |---|---|---|
 | §6.3, M5 | Query handlers in `Application`, reading `DbContext` | Handlers in `Infrastructure`; queries, read models and `PagedList<T>` stay in `Application`, which keeps its "no EF Core" invariant (ADR 0016) |
 | §6.7 | Rate limiter before authentication | Authentication first: the read and write policies partition by user id, which does not exist until the token has been read |
-| §7 M5 | `Asp.Versioning.OpenApi` for per-version documents | Two explicit `AddOpenApi` documents; the package had only reached a release candidate |
+| §7 M5 | Per-version OpenAPI documents from two explicit `AddOpenApi` calls | `Asp.Versioning.OpenApi` 10.2.3, stable since 30 July 2026. Analyzers AV0029/AV0030 refuse the two-document setup, and without `WithDocumentPerVersion()` the per-version documents are generated but never served |
 | §7 M5 | An unsupported version returns 400 | 404. With the version in the URL segment, `Asp.Versioning` treats an unknown version as an address that does not exist |
 | §7 M6 | A malformed body returns 422 | 400. A body that is not JSON never becomes a command, so no validator can name a field; 422 is kept for a well-formed body with bad values |
 | §7 M5 | Data shaping was never planned, and is explicitly declined | ADR 0017 records why: a shaped response no longer matches the OpenAPI schema |
 | §8 | Fifteen ADRs | Seventeen. ADR 0016 (query handlers) and 0017 (no data shaping) came out of M5 |
 | §13 | Deploy to Fly.io or Render | Render, Frankfurt, free tier, with Neon as the database |
 | M5 | `RolesController` appears in no milestone | Added in M5 PR18: a client needs a role id to assign one, and `roles.read` protected nothing without it |
+| §6.2 | An architecture test asserting the layer rules | Added after `v1.0.0`, and in two projects rather than one: the controller rule needs a project that references both `Api` and `Infrastructure`. Until then the rules were greps inside a helper script that is never committed, so nothing enforced them. Test baseline 266 → 269 |
+| §3, §12 | Local setup instructions and the per-milestone build guides in `docs/` | Removed. They described how this repository was produced and on which machine, not what it is; one of them also duplicated SQL that its migration already carries |

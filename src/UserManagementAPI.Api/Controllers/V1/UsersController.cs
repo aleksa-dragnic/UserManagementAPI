@@ -1,6 +1,7 @@
 using Asp.Versioning;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Contracts.V1;
@@ -31,6 +32,7 @@ namespace UserManagementAPI.Api.Controllers.V1;
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/users")]
 [Produces("application/json")]
+[EnableRateLimiting(RateLimitingExtensions.ReadPolicy)]
 public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator links) : ControllerBase
 {
     /// <summary>
@@ -121,6 +123,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Registers a user. The account starts Pending until its email is verified.</summary>
     [HttpPost(Name = RouteNames.RegisterUser)]
     [HasPermission(PermissionCodes.UsersWrite)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<UserCreatedResponse>(StatusCodes.Status201Created)]
@@ -144,6 +147,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Replaces the user's email and name.</summary>
     [HttpPut("{id:guid}", Name = RouteNames.UpdateUser)]
     [HasPermission(PermissionCodes.UsersWrite)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -160,6 +164,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Locks the user. A locked user cannot log in (M4).</summary>
     [HttpPost("{id:guid}/lock", Name = RouteNames.LockUser)]
     [HasPermission(PermissionCodes.UsersLock)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -175,6 +180,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Removes the lock. Modelled as deleting the lock resource.</summary>
     [HttpDelete("{id:guid}/lock", Name = RouteNames.UnlockUser)]
     [HasPermission(PermissionCodes.UsersLock)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -190,6 +196,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Assigns a role to the user.</summary>
     [HttpPost("{id:guid}/roles", Name = RouteNames.AssignRole)]
     [HasPermission(PermissionCodes.RolesManage)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -206,6 +213,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     /// <summary>Removes a role from the user. The last role cannot be removed.</summary>
     [HttpDelete("{id:guid}/roles/{roleId:guid}", Name = RouteNames.RemoveRole)]
     [HasPermission(PermissionCodes.RolesManage)]
+    [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

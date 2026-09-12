@@ -2,6 +2,7 @@ using System.Diagnostics;
 
 using Asp.Versioning.OpenApi;
 
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 
 using Scalar.AspNetCore;
@@ -11,10 +12,13 @@ using Serilog;
 using UserManagementAPI.Api.Errors;
 using UserManagementAPI.Api.Extensions;
 using UserManagementAPI.Api.Hateoas;
+using UserManagementAPI.Api.Middleware;
 using UserManagementAPI.Api.Services;
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application;
 using UserManagementAPI.Infrastructure;
+
+const long MaxRequestBodyBytes = 256 * 1024;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,9 +73,29 @@ builder.Services.AddProblemDetails(options =>
 });
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
+builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddVersionedApi();
+
+builder.Services.AddApiRateLimiting(builder.Configuration);
+builder.Services.AddApiCors(builder.Configuration);
+
+// A JSON request body has no legitimate reason to be large here; the default
+// 30 MB is a free denial-of-service budget.
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = MaxRequestBodyBytes);
+
+// Behind Render's proxy the scheme and the caller's address arrive in headers.
+// Without this the rate limiter partitions every request by the proxy's address
+// and HTTPS redirection sees http.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // KnownIPNetworks, not KnownNetworks: the latter is obsolete in .NET 10
+    // (ASPDEPR005) and obsolete is an error here.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddHealthChecks();
 
@@ -79,16 +103,34 @@ var app = builder.Build();
 
 await app.MigrateAndSeedAsync();
 
+app.UseForwardedHeaders();
+
 app.UseSerilogRequestLogging();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-app.UseHttpsRedirection();
+app.UseSecurityHeaders();
+
+// Only in production. In the compose stack nothing listens on an HTTPS port, so
+// redirecting there answers every call with a 307 to a port that is not open —
+// and it is the source of the "failed to determine the https port" warning.
+if (app.Environment.IsProduction())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
 
 app.UseRouting();
 
+app.UseCors(CorsExtensions.PolicyName);
+
+// Authentication before the rate limiter, because the read and write policies
+// partition by user id and there is no user until the token has been read. The
+// order in BUILD-PLAN section 6.7 has the limiter first, which would key every
+// authenticated request by IP instead.
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();

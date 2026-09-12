@@ -64,6 +64,25 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             cancellationToken);
     }
 
+    /// <summary>
+    /// Translates the EF concurrency failure into an application exception, so
+    /// the one place that knows about optimistic concurrency is the persistence
+    /// layer and every caller sees a type it is allowed to name.
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyConflictException(
+                "The record was modified by another request. Read it again and retry.",
+                exception);
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // citext gives case-insensitive uniqueness on email without a functional

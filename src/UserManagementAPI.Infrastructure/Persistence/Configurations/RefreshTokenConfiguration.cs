@@ -32,6 +32,13 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         // Bulk revocation on reuse detection reads by user.
         builder.HasIndex(token => token.UserId);
 
+        // PostgreSQL's xmin system column as a concurrency token: no column is
+        // added, and any update whose row changed since it was read fails rather
+        // than overwriting. Two requests that present the same refresh token at
+        // the same moment would otherwise both rotate it and both succeed, which
+        // hands out two live chains from one token.
+        builder.Property<uint>("xmin").IsRowVersion();
+
         builder.Property(token => token.ExpiresAtUtc).IsRequired();
         builder.Property(token => token.CreatedAtUtc).IsRequired();
 

@@ -1,6 +1,7 @@
 using Asp.Versioning;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Contracts.V1;
@@ -24,6 +25,7 @@ namespace UserManagementAPI.Api.Controllers.V1;
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/roles")]
 [Produces("application/json")]
+[EnableRateLimiting(RateLimitingExtensions.ReadPolicy)]
 public sealed class RolesController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Lists roles with the permission codes each grants, ordered by name.</summary>

@@ -12,4 +12,9 @@ public sealed class SeedOptions
     public string AdministratorEmail { get; set; } = "admin@umapi.local";
 
     public string AdministratorPassword { get; set; } = string.Empty;
+
+    /// <summary>The read-only account the public demo uses. Seeded only when a password is set.</summary>
+    public string DemoEmail { get; set; } = "demo@umapi.local";
+
+    public string DemoPassword { get; set; } = string.Empty;
 }

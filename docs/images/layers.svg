@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <title>UserManagementAPI project dependencies</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="300" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="600" fill="#0f172a">Project dependencies</text>
+  <text x="24" y="56" font-size="13" fill="#475569">Every arrow points inward. Domain references nothing but the BCL.</text>
+
+  <rect x="24" y="96" width="180" height="74" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="114" y="126" font-size="14" font-weight="600" fill="#1e1b4b" text-anchor="middle">Api</text>
+  <text x="114" y="146" font-size="11" fill="#4338ca" text-anchor="middle">controllers, contracts,</text>
+  <text x="114" y="160" font-size="11" fill="#4338ca" text-anchor="middle">filters, composition root</text>
+
+  <rect x="290" y="96" width="180" height="74" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+  <text x="380" y="126" font-size="14" font-weight="600" fill="#083344" text-anchor="middle">Application</text>
+  <text x="380" y="146" font-size="11" fill="#0e7490" text-anchor="middle">commands, queries,</text>
+  <text x="380" y="160" font-size="11" fill="#0e7490" text-anchor="middle">behaviors, abstractions</text>
+
+  <rect x="556" y="96" width="180" height="74" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="646" y="126" font-size="14" font-weight="600" fill="#052e16" text-anchor="middle">Domain</text>
+  <text x="646" y="146" font-size="11" fill="#15803d" text-anchor="middle">aggregates, value objects,</text>
+  <text x="646" y="160" font-size="11" fill="#15803d" text-anchor="middle">invariants, domain events</text>
+
+  <rect x="290" y="212" width="180" height="62" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="380" y="240" font-size="14" font-weight="600" fill="#431407" text-anchor="middle">Infrastructure</text>
+  <text x="380" y="260" font-size="11" fill="#c2410c" text-anchor="middle">EF Core, identity, outbox, queries</text>
+
+  <line x1="204" y1="133" x2="284" y2="133" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="470" y1="133" x2="550" y2="133" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <path d="M 114 170 L 114 243 L 284 243" fill="none" stroke="#334155" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M 470 243 L 646 243 L 646 176" fill="none" stroke="#334155" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <text x="126" y="208" font-size="10.5" fill="#475569">Program.cs only</text>
+</svg>

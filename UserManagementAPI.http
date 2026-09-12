@@ -1,0 +1,131 @@
+@host = http://localhost:5085
+@adminEmail = admin@umapi.local
+@adminPassword = <Seed:AdministratorPassword from user secrets>
+
+### The API root: every other address is discoverable from here.
+GET {{host}}/api
+Accept: application/json
+
+### Log in. The token is captured for every request below.
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+@accessToken = {{login.response.body.accessToken}}
+@refreshToken = {{login.response.body.refreshToken}}
+
+### List users: page two, ten at a time, newest first.
+GET {{host}}/api/v1/users?pageNumber=1&pageSize=10&orderBy=createdAt desc
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Search and filter.
+GET {{host}}/api/v1/users?searchTerm=admin&status=Active
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### The same collection with hypermedia links.
+GET {{host}}/api/v1/users
+Accept: application/vnd.umapi.hateoas+json
+Authorization: Bearer {{accessToken}}
+
+### Register a user. The location of the new user comes back in the header.
+# @name register
+POST {{host}}/api/v1/users
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "email": "ana.petrovic@example.com",
+  "firstName": "Ana",
+  "lastName": "Petrović",
+  "password": "Passw0rd-long-enough"
+}
+
+@userId = {{register.response.body.id}}
+
+### Read that user. Copy the ETag from the response for the next request.
+GET {{host}}/api/v1/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Conditional GET: with a matching ETag this answers 304 and no body.
+GET {{host}}/api/v1/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+If-None-Match: "<paste the ETag from the response above>"
+
+### Version 2 of the same user: one display name instead of two fields.
+GET {{host}}/api/v2/users/{{userId}}
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Update the user.
+PUT {{host}}/api/v1/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "email": "ana.petrovic@example.com",
+  "firstName": "Ana",
+  "lastName": "Nikolić"
+}
+
+### The roles a user can be given.
+# @name roles
+GET {{host}}/api/v1/roles
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+@memberRoleId = {{roles.response.body.$[1].id}}
+
+### Assign a role.
+POST {{host}}/api/v1/users/{{userId}}/roles
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "roleId": "{{memberRoleId}}"
+}
+
+### Remove it again.
+DELETE {{host}}/api/v1/users/{{userId}}/roles/{{memberRoleId}}
+Authorization: Bearer {{accessToken}}
+
+### Lock the account. A locked user cannot log in.
+POST {{host}}/api/v1/users/{{userId}}/lock
+Authorization: Bearer {{accessToken}}
+
+### Unlock it.
+DELETE {{host}}/api/v1/users/{{userId}}/lock
+Authorization: Bearer {{accessToken}}
+
+### Which methods the collection supports.
+OPTIONS {{host}}/api/v1/users
+Authorization: Bearer {{accessToken}}
+
+### Rotate the token pair. The presented refresh token is retired.
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Log out: the refresh token is revoked.
+POST {{host}}/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Health.
+GET {{host}}/health/ready
+
+###

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Contracts.V1;
 using UserManagementAPI.Api.Extensions;
+using UserManagementAPI.Api.Filters;
 using UserManagementAPI.Api.Mapping;
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Users.Commands.LockUser;
@@ -33,6 +34,8 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
     /// </summary>
     [HttpGet]
     [HasPermission(PermissionCodes.UsersRead)]
+    [ETagFilter]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<IReadOnlyList<UserResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -56,6 +59,8 @@ public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
     /// <summary>Returns one user with the roles they hold.</summary>
     [HttpGet("{id:guid}")]
     [HasPermission(PermissionCodes.UsersRead)]
+    [ETagFilter]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<UserDetailsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

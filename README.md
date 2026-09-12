@@ -44,7 +44,7 @@ commented at the top of the file.
 
 ## Live demo
 
-**https://usermanagementapi.onrender.com/scalar**
+**https://usermanagementapi-j1if.onrender.com/scalar**
 
 A read-only account is seeded for it: `demo@umapi.local` / `Demo-Passw0rd-2026!`.
 It holds the `Member` role, which grants `users.read` and `roles.read`, so

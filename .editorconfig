@@ -4,6 +4,11 @@ root = true
 [*]
 indent_style = space
 
+# Every file here is UTF-8. Without this line one test file was saved as
+# Windows-1252 at some point and a Serbian surname survived to v1.0.0 as
+# mojibake; the rule is what stops the next one.
+charset = utf-8
+
 # Xml files
 [*.xml]
 indent_size = 2
@@ -386,4 +391,8 @@ dotnet_naming_style.s_camelcase.required_prefix = s_
 dotnet_naming_style.s_camelcase.required_suffix = 
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
-
+# EF Core writes its migrations with a byte order mark. They are generated
+# files, so the encoding is recorded as it is rather than fought: without this,
+# the rule above invites an editor to rewrite fourteen files that nobody edited.
+[src/UserManagementAPI.Infrastructure/Migrations/*.cs]
+charset = utf-8-bom

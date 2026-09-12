@@ -31,8 +31,20 @@ services:
       # instance gets its own from the platform's secret store.
       Jwt__SigningKey: "local-compose-signing-key-not-for-any-other-environment-0123456789abcdef"
       Seed__AdministratorPassword: "Admin-Local-Compose-2026!"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel:4317"
     ports:
       - "8080:8080"
+
+  # One container holding an OTLP collector, Prometheus, Tempo and Grafana, so a
+  # request can be followed from the HTTP span into the SQL it ran. Development
+  # only — a deployed instance points OTEL_EXPORTER_OTLP_ENDPOINT at whatever
+  # collector it has, or leaves it unset and exports nothing.
+  otel:
+    image: grafana/otel-lgtm:latest
+    container_name: umapi-otel
+    ports:
+      - "3000:3000"
+      - "4317:4317"
 
 volumes:
   db-data:

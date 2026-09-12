@@ -119,7 +119,7 @@ public class UserTests
     [Fact]
     public void ChangeName_Fails_WhenTheUserIsDeactivated()
     {
-        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "JovanoviÄ‡"));
+        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "Jovanović"));
 
         result.Error.Should().Be(User.Deactivated);
     }

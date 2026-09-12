@@ -38,7 +38,9 @@ Log in at `POST /api/v1/auth/login` with `admin@umapi.local` /
 into Scalar's auth box, and every endpoint is callable from the browser.
 
 `UserManagementAPI.http` in the repository root runs the same flow from an
-editor: log in, capture the token, then every endpoint in order.
+editor: log in, capture the token, then every endpoint in order. It targets
+`dotnet run` on port 5085 by default, with the compose host and password
+commented at the top of the file.
 
 ## Live demo
 

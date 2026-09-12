@@ -1,6 +1,7 @@
 using Asp.Versioning;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Extensions;
@@ -24,6 +25,7 @@ namespace UserManagementAPI.Api.Controllers.V2;
 [ApiVersion(2.0)]
 [Route("api/v{version:apiVersion}/users")]
 [Produces("application/json")]
+[EnableRateLimiting(RateLimitingExtensions.ReadPolicy)]
 public sealed class UsersController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Returns one user with a single display name.</summary>

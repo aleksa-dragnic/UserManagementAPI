@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using UserManagementAPI.Api.Contracts.V1;
 using UserManagementAPI.Api.Extensions;
+using UserManagementAPI.Api.Hateoas;
 using UserManagementAPI.Api.Mapping;
 using UserManagementAPI.Application.Abstractions;
 
@@ -23,7 +24,7 @@ namespace UserManagementAPI.Api.Controllers.V1;
 public sealed class AuthController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Exchanges an email and password for a token pair.</summary>
-    [HttpPost("login")]
+    [HttpPost("login", Name = RouteNames.Login)]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]

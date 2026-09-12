@@ -6,6 +6,7 @@ using UserManagementAPI.Api.Authorization;
 using UserManagementAPI.Api.Contracts.V1;
 using UserManagementAPI.Api.Extensions;
 using UserManagementAPI.Api.Filters;
+using UserManagementAPI.Api.Hateoas;
 using UserManagementAPI.Api.Mapping;
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Roles.Queries.GetRoleById;
@@ -26,7 +27,8 @@ namespace UserManagementAPI.Api.Controllers.V1;
 public sealed class RolesController(IDispatcher dispatcher) : ControllerBase
 {
     /// <summary>Lists roles with the permission codes each grants, ordered by name.</summary>
-    [HttpGet]
+    [HttpGet(Name = RouteNames.GetRoles)]
+    [HttpHead]
     [HasPermission(PermissionCodes.RolesRead)]
     [ETagFilter]
     [ProducesResponseType(StatusCodes.Status304NotModified)]
@@ -43,7 +45,8 @@ public sealed class RolesController(IDispatcher dispatcher) : ControllerBase
     }
 
     /// <summary>Returns one role with its permission codes.</summary>
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id:guid}", Name = RouteNames.GetRole)]
+    [HttpHead("{id:guid}")]
     [HasPermission(PermissionCodes.RolesRead)]
     [ETagFilter]
     [ProducesResponseType(StatusCodes.Status304NotModified)]

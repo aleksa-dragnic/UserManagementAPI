@@ -2,12 +2,15 @@ using System.Diagnostics;
 
 using Asp.Versioning.OpenApi;
 
+using Microsoft.AspNetCore.Mvc.Formatters;
+
 using Scalar.AspNetCore;
 
 using Serilog;
 
 using UserManagementAPI.Api.Errors;
 using UserManagementAPI.Api.Extensions;
+using UserManagementAPI.Api.Hateoas;
 using UserManagementAPI.Api.Services;
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application;
@@ -35,8 +38,21 @@ builder.Services.AddApiAuthentication(builder.Configuration);
 // Without this, MVC treats every such property as [Required] and answers 400
 // from model binding before the command validator ever runs. The validator is
 // the one source of shape errors and it answers 422.
+//
+// The HATEOAS vendor type is added to the JSON formatter so content negotiation
+// can answer with it; the representation itself is chosen by the action.
 builder.Services.AddControllers(options =>
-    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+{
+    options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+
+    options.OutputFormatters
+        .OfType<SystemTextJsonOutputFormatter>()
+        .First()
+        .SupportedMediaTypes.Add(HateoasMediaTypes.Hateoas);
+});
+
+builder.Services.AddSingleton<LinkFactory>();
+builder.Services.AddSingleton<UserLinkGenerator>();
 
 builder.Services.AddProblemDetails(options =>
 {

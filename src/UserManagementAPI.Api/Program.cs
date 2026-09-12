@@ -142,7 +142,10 @@ app.MapApiHealthChecks();
 // The documentation is what makes a deployed instance a demo rather than a
 // screenshot, so it can be switched on outside development — deliberately, by
 // configuration, and off by default.
-if (app.Environment.IsDevelopment() || app.Configuration.GetValue("OpenApi:Enabled", false))
+var documentationPublished =
+    app.Environment.IsDevelopment() || app.Configuration.GetValue("OpenApi:Enabled", false);
+
+if (documentationPublished)
 {
     app.MapOpenApi().WithDocumentPerVersion();
     app.MapScalarApiReference("/scalar", options => options
@@ -150,6 +153,19 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue("OpenApi:Enabl
         .WithTheme(ScalarTheme.BluePlanet)
         .AddDocuments(ApiVersioningExtensions.Documents));
 }
+
+// Someone who trims the URL down to the host should land somewhere useful
+// rather than on a bare 404. The root document at /api is the honest REST entry
+// point and is always there; the reference is the thing worth looking at, so it
+// wins whenever it is published. HEAD is answered too, because that is what a
+// platform health probe sends at the root.
+//
+// A found status, not a permanent one: this is a convenience, and a 301 would
+// be cached by every browser that ever saw it.
+app.MapMethods("/", ["GET", "HEAD"], () =>
+        Results.Redirect(documentationPublished ? "/scalar" : "/api", permanent: false))
+    .AllowAnonymous()
+    .ExcludeFromDescription();
 
 app.Run();
 

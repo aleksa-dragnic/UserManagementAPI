@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
 using UserManagementAPI.Api.Contracts.V1;
@@ -13,10 +14,14 @@ namespace UserManagementAPI.IntegrationTests;
 /// <summary>
 /// The real application over real HTTP, against the shared Testcontainers
 /// database. Program is partial and public (M0 PR3) precisely so this can exist.
-/// Pulled forward from M6 PR23 because M4 needs one functional test — the
-/// seeded Member must get a 403 on a write endpoint — and PR23 extends it.
+/// Pulled forward from M6 PR23 because M4 needed one functional test — the
+/// seeded Member must get a 403 on a write endpoint — and PR23 extended it with
+/// per-test service replacement and setting overrides.
 /// </summary>
-public sealed class ApiFactory(DatabaseFixture fixture) : WebApplicationFactory<Program>
+public sealed class ApiFactory(
+    DatabaseFixture fixture,
+    Action<IServiceCollection>? configureServices = null,
+    IDictionary<string, string?>? settings = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -30,9 +35,24 @@ public sealed class ApiFactory(DatabaseFixture fixture) : WebApplicationFactory<
         // Build(). UseSetting reaches WebApplication.CreateBuilder as host
         // configuration, ahead of every read, and wins over appsettings.json
         // and the user secrets on the machine.
-        foreach (var (key, value) in fixture.DefaultSettings())
+        var values = fixture.DefaultSettings();
+
+        foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
+        {
+            values[key] = value;
+        }
+
+        foreach (var (key, value) in values)
         {
             builder.UseSetting(key, value);
+        }
+
+        // ConfigureTestServices runs after Program.cs has registered everything,
+        // so a replacement here wins. It is how a test makes a dependency throw
+        // without a test-only endpoint in the production code.
+        if (configureServices is not null)
+        {
+            builder.ConfigureTestServices(configureServices);
         }
     }
 

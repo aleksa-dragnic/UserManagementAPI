@@ -22,3 +22,4 @@ in the pull request that implements it.
 | [0015](0015-multi-tenancy-and-oidc-out-of-scope.md) | Multi-tenancy and OIDC explicitly out of scope | M4 |
 | [0016](0016-query-handlers-in-infrastructure.md) | Query handlers live in Infrastructure | M5 |
 | [0017](0017-no-data-shaping.md) | No data shaping on collection endpoints | M5 |
+| [0018](0018-json-console-logs-in-production.md) | JSON console logs in production | post-1.0 |

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Scalar.AspNetCore;
 
 using Serilog;
+using Serilog.Formatting.Compact;
 
 using UserManagementAPI.Api.Errors;
 using UserManagementAPI.Api.Extensions;
@@ -22,10 +23,36 @@ const long MaxRequestBodyBytes = 256 * 1024;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, services, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext());
+// Levels and overrides stay in configuration; the sink does not, because which
+// sink is used is a security decision rather than an operational one.
+//
+// A request path is percent-decoded before it reaches a log call, so a request
+// for /foo%0A... arrives with a real newline in it. Written to a plain-text
+// console that is one forged log line, and it is not only this application's
+// log calls that are exposed - UseSerilogRequestLogging writes the same path on
+// every single request. Rendering the event as JSON ends the whole class: a
+// newline inside a JSON string is two characters and cannot begin a new record,
+// whatever it contains. ADR 0018.
+//
+// Development keeps the readable template. There is no attacker on a
+// workstation, and this is the format a person reads all day.
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
+
+    if (context.HostingEnvironment.IsProduction())
+    {
+        configuration.WriteTo.Console(new CompactJsonFormatter());
+    }
+    else
+    {
+        configuration.WriteTo.Console(
+            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {Message:lj}{NewLine}{Exception}");
+    }
+});
 
 builder.Services.AddApplication();
 

@@ -1,0 +1,42 @@
+# Render blueprint for the demo instance. The database is Neon, not Render, so
+# only the web service is described here.
+#
+# Secrets are set in the Render dashboard, never in this file:
+#   ConnectionStrings__Default   the pooled Neon connection string for "main"
+#   Jwt__SigningKey              64+ characters
+#   Seed__AdministratorPassword  the bootstrap administrator's password
+#   Seed__DemoPassword           the read-only demo account's password
+#
+# Migrations are applied deliberately from a workstation against the direct Neon
+# connection string before a deploy that changes the schema; the service does not
+# migrate on startup. Database__SeedOnStartup is switched on for one boot to
+# create the accounts, then set back to false.
+services:
+  - type: web
+    name: usermanagementapi
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: OpenApi__Enabled
+        value: "true"
+      - key: Database__MigrateOnStartup
+        value: "false"
+      - key: Database__SeedOnStartup
+        value: "false"
+      - key: Seed__AdministratorEmail
+        value: admin@umapi.local
+      - key: RateLimiting__Auth__PermitLimit
+        value: "10"
+      - key: ConnectionStrings__Default
+        sync: false
+      - key: Jwt__SigningKey
+        sync: false
+      - key: Seed__AdministratorPassword
+        sync: false
+      - key: Seed__DemoPassword
+        sync: false

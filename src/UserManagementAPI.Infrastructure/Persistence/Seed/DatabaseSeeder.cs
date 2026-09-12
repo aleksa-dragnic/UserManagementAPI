@@ -28,8 +28,9 @@ public sealed class DatabaseSeeder(
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         var seededPermissions = await SeedPermissionsAsync(cancellationToken);
-        var administratorRoleId = await SeedRolesAsync(seededPermissions, cancellationToken);
+        var (administratorRoleId, memberRoleId) = await SeedRolesAsync(seededPermissions, cancellationToken);
         await SeedAdministratorAsync(administratorRoleId, cancellationToken);
+        await SeedDemoUserAsync(memberRoleId, cancellationToken);
     }
 
     private async Task<Dictionary<string, Guid>> SeedPermissionsAsync(CancellationToken cancellationToken)
@@ -52,17 +53,17 @@ public sealed class DatabaseSeeder(
         return existing;
     }
 
-    /// <summary>Returns the Administrator role id, which the administrator account needs.</summary>
-    private async Task<Guid> SeedRolesAsync(
+    /// <summary>Returns the role ids the seeded accounts need.</summary>
+    private async Task<(Guid AdministratorRoleId, Guid MemberRoleId)> SeedRolesAsync(
         Dictionary<string, Guid> permissionIds,
         CancellationToken cancellationToken)
     {
         var administrator = await SeedRoleAsync(RoleNames.Administrator, PermissionCodes.All, permissionIds, cancellationToken);
-        await SeedRoleAsync(RoleNames.Member, PermissionCodes.ReadOnly, permissionIds, cancellationToken);
+        var member = await SeedRoleAsync(RoleNames.Member, PermissionCodes.ReadOnly, permissionIds, cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return administrator.Id;
+        return (administrator.Id, member.Id);
     }
 
     private async Task<Role> SeedRoleAsync(
@@ -121,5 +122,37 @@ public sealed class DatabaseSeeder(
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Seeding bootstrap administrator {AdministratorEmail}.", email.Value);
+    }
+
+    /// <summary>
+    /// The read-only account the public demo advertises. Seeded only where a
+    /// password is configured, which is the deployed instance and nowhere else —
+    /// a demo account with a published password has no business existing in a
+    /// developer's database.
+    /// </summary>
+    private async Task SeedDemoUserAsync(Guid memberRoleId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_seed.DemoPassword))
+        {
+            return;
+        }
+
+        var email = Email.Create(_seed.DemoEmail).Value;
+
+        if (await context.Users.AnyAsync(user => user.Email.Value == email.Value, cancellationToken))
+        {
+            return;
+        }
+
+        var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.DemoPassword)).Value;
+        var demo = User.Register(email, PersonName.Create("Demo", "Reader").Value, passwordHash).Value;
+
+        demo.VerifyEmail();
+        demo.AssignRole(memberRoleId);
+
+        context.Users.Add(demo);
+        await context.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Seeding read-only demo account {DemoEmail}.", email.Value);
     }
 }

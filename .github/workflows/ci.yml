@@ -47,3 +47,14 @@ jobs:
           name: test-results
           path: ./artifacts/test-results
           retention-days: 7
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./artifacts/test-results
+          fail_ci_if_error: false
+
+      - name: Build the container image
+        run: docker build --tag usermanagementapi:${{ github.sha }} .

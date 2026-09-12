@@ -77,6 +77,34 @@ public class UserTests
     }
 
     [Fact]
+    public void ChangeEmail_ToTheCurrentAddress_ChangesNothing()
+    {
+        var user = TestUsers.Active();
+        var current = user.Email;
+        var updatedBefore = user.UpdatedAtUtc;
+
+        var result = user.ChangeEmail(TestUsers.Email());
+
+        result.IsSuccess.Should().BeTrue();
+        user.Email.Should().BeSameAs(current);
+        user.UpdatedAtUtc.Should().Be(updatedBefore);
+    }
+
+    [Fact]
+    public void ChangeName_ToTheCurrentName_ChangesNothing()
+    {
+        var user = TestUsers.Active();
+        var current = user.Name;
+        var updatedBefore = user.UpdatedAtUtc;
+
+        var result = user.ChangeName(TestUsers.Name());
+
+        result.IsSuccess.Should().BeTrue();
+        user.Name.Should().BeSameAs(current);
+        user.UpdatedAtUtc.Should().Be(updatedBefore);
+    }
+
+    [Fact]
     public void ChangeEmail_Fails_WhenTheUserIsDeactivated()
     {
         var user = TestUsers.Deactivated();

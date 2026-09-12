@@ -86,6 +86,26 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
     }
 
     [Fact]
+    public async Task AnUpdateThatChangesNothing_WritesNoAuditEntry()
+    {
+        await using var provider = fixture.CreateServiceProvider();
+        var user = await RegisterAsync(provider, "unchanged@example.com");
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await context.Users.SingleAsync(candidate => candidate.Id == user.Id);
+
+            tracked.ChangeEmail(Email.Create("UNCHANGED@example.com").Value);
+            tracked.ChangeName(PersonName.Create("Ana", "Petrović").Value);
+            await context.SaveChangesAsync();
+        }
+
+        await using var verify = fixture.CreateContext();
+        verify.AuditLog.Should().NotContain(entry => entry.Action == "Updated");
+    }
+
+    [Fact]
     public async Task NoAuditPayload_ContainsAPasswordHashOrAToken_AndTokensAreNotAudited()
     {
         await using var provider = fixture.CreateServiceProvider();

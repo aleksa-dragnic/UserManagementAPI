@@ -107,11 +107,22 @@ public sealed class User : AggregateRoot
         return Result.Success();
     }
 
+    /// <summary>
+    /// Changing to the address the user already has changes nothing: the value
+    /// is not reassigned and UpdatedAtUtc is not stamped. A PUT that repeats the
+    /// current state must not look like an edit — not to the audit log, which
+    /// would list a field that did not move, and not to an ETag.
+    /// </summary>
     public Result ChangeEmail(Email email)
     {
         if (Status == UserStatus.Deactivated)
         {
             return Result.Failure(Deactivated);
+        }
+
+        if (Email == email)
+        {
+            return Result.Success();
         }
 
         Email = email;
@@ -120,11 +131,17 @@ public sealed class User : AggregateRoot
         return Result.Success();
     }
 
+    /// <summary>Same rule as ChangeEmail: the current name is a no-op.</summary>
     public Result ChangeName(PersonName name)
     {
         if (Status == UserStatus.Deactivated)
         {
             return Result.Failure(Deactivated);
+        }
+
+        if (Name == name)
+        {
+            return Result.Success();
         }
 
         Name = name;

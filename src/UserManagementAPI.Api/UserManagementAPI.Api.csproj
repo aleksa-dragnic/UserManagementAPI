@@ -34,4 +34,9 @@
     <ProjectReference Include="..\UserManagementAPI.Infrastructure\UserManagementAPI.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The exception handlers are internal; the tests assert the status each one produces. -->
+    <InternalsVisibleTo Include="UserManagementAPI.IntegrationTests" />
+  </ItemGroup>
+
 </Project>

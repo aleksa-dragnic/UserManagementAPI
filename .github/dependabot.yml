@@ -19,12 +19,16 @@ updates:
     commit-message:
       prefix: chore
       include: scope
-    # First matching group wins, so the narrow ones are listed first.
+    # A dependency can match more than one group, and when it does it goes into
+    # every one of them - order is not precedence. Microsoft.NET.Test.Sdk
+    # matched both "Microsoft.NET.Test.Sdk" here and "Microsoft.*" below, so two
+    # pull requests edited the same two lines of Directory.Packages.props and
+    # the second one conflicted. The broad group excludes what the narrow ones
+    # already claim.
     groups:
       testing:
         patterns:
           - "xunit*"
-          - "FluentAssertions"
           - "NSubstitute"
           - "Testcontainers*"
           - "coverlet.collector"
@@ -43,6 +47,21 @@ updates:
           - "System.*"
           - "Npgsql*"
           - "EFCore.*"
+        exclude-patterns:
+          - "Microsoft.NET.Test.Sdk"
+          - "Microsoft.AspNetCore.Mvc.Testing"
+          - "Npgsql.OpenTelemetry"
+
+    # FluentAssertions 8 moved from Apache 2.0 to the Xceed Community License:
+    # free for non-commercial use, paid for commercial use. Version 7 stays
+    # Apache 2.0 and still receives fixes. BUILD-PLAN section 2 already rejects
+    # a dependency over licensing constraints, so taking 8 here would have
+    # contradicted a decision this repository records. Minor and patch updates
+    # inside 7.x are still welcome.
+    ignore:
+      - dependency-name: "FluentAssertions"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: "/"

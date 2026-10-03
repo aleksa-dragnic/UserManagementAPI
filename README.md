@@ -42,6 +42,17 @@ editor: log in, capture the token, then every endpoint in order. It targets
 `dotnet run` on port 5085 by default, with the compose host and password
 commented at the top of the file.
 
+For a directory worth browsing, add 130 synthetic users with Serbian names in
+every status. It runs once, by hand, and skips anyone already there:
+
+```bash
+docker compose exec api dotnet UserManagementAPI.Api.dll seed-demo-directory
+```
+
+Against any other migrated and seeded database it is
+`dotnet run --project src/UserManagementAPI.Api -- seed-demo-directory`. The
+seeded users cannot sign in: their password hash matches no password.
+
 ## Live demo
 
 **https://usermanagementapi-j1if.onrender.com/scalar**

@@ -24,7 +24,6 @@ Content-Type: application/json
 }
 
 @accessToken = {{login.response.body.accessToken}}
-@refreshToken = {{login.response.body.refreshToken}}
 
 ### List users: page two, ten at a time, newest first.
 GET {{host}}/api/v1/users?pageNumber=1&pageSize=10&orderBy=createdAt desc
@@ -116,21 +115,13 @@ Authorization: Bearer {{accessToken}}
 OPTIONS {{host}}/api/v1/users
 Authorization: Bearer {{accessToken}}
 
-### Rotate the token pair. The presented refresh token is retired.
+### Rotate the refresh token. It travels in the umapi_rt cookie login set, and
+# the request has no body. The cookie is Secure, so a client that honours the
+# attribute sends it back only over HTTPS - the https launch profile.
 POST {{host}}/api/v1/auth/refresh
-Content-Type: application/json
 
-{
-  "refreshToken": "{{refreshToken}}"
-}
-
-### Log out: the refresh token is revoked.
+### Log out: the refresh token in the cookie is revoked and the cookie cleared.
 POST {{host}}/api/v1/auth/logout
-Content-Type: application/json
-
-{
-  "refreshToken": "{{refreshToken}}"
-}
 
 ### Health.
 GET {{host}}/health/ready

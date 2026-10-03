@@ -69,10 +69,14 @@ public sealed class ApiFactory(
         await ActivatorUtilities.CreateInstance<DatabaseSeeder>(scope.ServiceProvider).SeedAsync();
     }
 
-    /// <summary>A client with a bearer token for the given credentials.</summary>
+    /// <summary>
+    /// A client with a bearer token for the given credentials. It keeps no
+    /// cookies: the bearer token is its credential, and the refresh cookie the
+    /// login sets stays out of every request a test did not ask it to reach.
+    /// </summary>
     public async Task<HttpClient> CreateClientAsAsync(string email, string password)
     {
-        var client = CreateClient();
+        var client = CreateClientWithExplicitCookies();
 
         var response = await client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest(email, password));
         response.EnsureSuccessStatusCode();
@@ -86,4 +90,12 @@ public sealed class ApiFactory(
 
     public Task<HttpClient> CreateAdministratorClientAsync() =>
         CreateClientAsAsync(DatabaseFixture.AdministratorEmail, DatabaseFixture.AdministratorPassword);
+
+    /// <summary>
+    /// A client that keeps no cookies of its own. The refresh token travels in
+    /// a cookie (ADR 0019), and a test that presents one — the current one, a
+    /// superseded one, or none — says so through the Cookie header.
+    /// </summary>
+    public HttpClient CreateClientWithExplicitCookies() =>
+        CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
 }

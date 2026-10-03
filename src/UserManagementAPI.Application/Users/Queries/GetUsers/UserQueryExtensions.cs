@@ -48,10 +48,12 @@ public static class UserQueryExtensions
     }
 
     /// <summary>
-    /// Case-insensitive substring match on email, first name and last name.
-    /// Emails are stored lowercase already (Email normalises on creation), so
-    /// only the names are lowered; in SQL that is lower(name_first), with the
-    /// term as a parameter.
+    /// Case- and accent-insensitive substring match on the email and on the full
+    /// name, first and last joined by a space: "petrovic" finds Petrović, and
+    /// "ana petrović" finds Ana Petrović. The term is folded here, once; the name
+    /// is folded by the database (SearchText, ADR 0020). The email is compared as
+    /// stored — Email normalises it to lowercase on creation — with the term as a
+    /// parameter.
     /// </summary>
     public static IQueryable<User> Search(this IQueryable<User> users, string? searchTerm)
     {
@@ -60,12 +62,11 @@ public static class UserQueryExtensions
             return users;
         }
 
-        var term = searchTerm.Trim().ToLowerInvariant();
+        var term = SearchText.Fold(searchTerm.Trim());
 
         return users.Where(user =>
             user.Email.Value.Contains(term) ||
-            user.Name.First.ToLower().Contains(term) ||
-            user.Name.Last.ToLower().Contains(term));
+            SearchText.Fold(user.Name.First + " " + user.Name.Last).Contains(term));
     }
 
     /// <summary>

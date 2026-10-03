@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 using UserManagementAPI.Application.Abstractions;
+using UserManagementAPI.Application.Users.Queries.GetUsers;
 using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
@@ -88,6 +90,28 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         // citext gives case-insensitive uniqueness on email without a functional
         // index and without LOWER() on every lookup.
         modelBuilder.HasPostgresExtension("citext");
+
+        // unaccent folds diacritics for the user search (ADR 0020). SearchText.Fold
+        // is plain C# in the Application, so the rule stays testable in memory;
+        // against the database it becomes lower(unaccent(...)) on the column.
+        modelBuilder.HasPostgresExtension("unaccent");
+
+        modelBuilder.HasDbFunction(typeof(SearchText).GetMethod(nameof(SearchText.Fold), [typeof(string)])!)
+            .HasTranslation(arguments => new SqlFunctionExpression(
+                "lower",
+                [
+                    new SqlFunctionExpression(
+                        "unaccent",
+                        arguments,
+                        nullable: true,
+                        argumentsPropagateNullability: [true],
+                        typeof(string),
+                        arguments[0].TypeMapping)
+                ],
+                nullable: true,
+                argumentsPropagateNullability: [true],
+                typeof(string),
+                arguments[0].TypeMapping));
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 

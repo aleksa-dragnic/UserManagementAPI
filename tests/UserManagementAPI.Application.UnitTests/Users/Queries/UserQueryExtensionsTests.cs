@@ -20,8 +20,22 @@ public sealed class UserQueryExtensionsTests
     [Fact]
     public void Search_MatchesOnFirstOrLastName_IgnoringCase()
     {
-        Sample().Search("PETROVIĆ").Select(user => user.Name.First).Should().BeEquivalentTo("Ana", "Ivana");
+        Sample().Search("NIKOLIĆ").Select(user => user.Name.First).Should().Equal("Jelena");
         Sample().Search("marko").Select(user => user.Name.First).Should().Equal("Marko");
+    }
+
+    [Fact]
+    public void Search_IgnoresDiacritics_InTheTermAndInTheName()
+    {
+        Sample().Search("nikolic").Select(user => user.Name.First).Should().Equal("Jelena");
+        Sample().Search("JOVANOVIĆ").Select(user => user.Name.First).Should().Equal("Marko");
+    }
+
+    [Fact]
+    public void Search_MatchesTheFullName()
+    {
+        Sample().Search("ivana petrovic").Select(user => user.Name.First).Should().Equal("Ivana");
+        Sample().Search("Marko Jovanović").Select(user => user.Name.First).Should().Equal("Marko");
     }
 
     [Fact]

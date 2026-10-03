@@ -1,14 +1,17 @@
 namespace UserManagementAPI.Api.Extensions;
 
 /// <summary>
-/// One named policy, with the allowed origins read from configuration: there is
-/// no browser client in this repository, so a wildcard would be permissiveness
-/// with no beneficiary. An empty list means no cross-origin request is allowed,
-/// which is the right default for an API called from a server.
+/// One named policy, with the allowed origins read from configuration. The
+/// browser client is named by its exact origin, so a wildcard would be
+/// permissiveness with no beneficiary — and ASP.NET Core refuses a wildcard
+/// together with credentials, which the refresh cookie needs (ADR 0019). An
+/// empty list means no cross-origin request is allowed, which is the right
+/// default for an API called from a server.
 ///
-/// X-Pagination, ETag and the version headers are exposed, because a browser
-/// cannot read a response header that is not — the paging metadata and the
-/// entity tag would exist and be invisible.
+/// X-Pagination, ETag, X-Correlation-Id and the version headers are exposed,
+/// because a browser cannot read a response header that is not — the paging
+/// metadata, the entity tag and the id a log line carries would exist and be
+/// invisible.
 /// </summary>
 public static class CorsExtensions
 {
@@ -28,6 +31,7 @@ public static class CorsExtensions
                     "X-Pagination",
                     "ETag",
                     "Retry-After",
+                    "X-Correlation-Id",
                     "api-supported-versions",
                     "api-deprecated-versions");
 

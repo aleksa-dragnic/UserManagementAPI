@@ -161,13 +161,17 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }
 
-    /// <summary>Locks the user. A locked user cannot log in (M4).</summary>
+    /// <summary>
+    /// Locks the user. A locked user cannot log in (M4). Nobody can lock their
+    /// own account.
+    /// </summary>
     [HttpPost("{id:guid}/lock", Name = RouteNames.LockUser)]
     [HasPermission(PermissionCodes.UsersLock)]
     [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Lock(Guid id, CancellationToken cancellationToken)

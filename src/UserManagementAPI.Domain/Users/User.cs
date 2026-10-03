@@ -19,6 +19,10 @@ public sealed class User : AggregateRoot
 
     public static readonly Error AlreadyLocked = new("User.AlreadyLocked", "The user is already locked.");
 
+    public static readonly Error CannotLockSelf = new(
+        "User.CannotLockSelf",
+        "A user cannot lock their own account.");
+
     public static readonly Error NotLocked = new("User.NotLocked", "The user is not locked.");
 
     public static readonly Error AlreadyDeactivated = new(

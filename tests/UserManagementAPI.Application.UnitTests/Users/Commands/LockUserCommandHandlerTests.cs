@@ -7,9 +7,10 @@ namespace UserManagementAPI.Application.UnitTests.Users.Commands;
 public sealed class LockUserCommandHandlerTests
 {
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private LockUserCommandHandler Handler() => new(_userRepository, _unitOfWork);
+    private LockUserCommandHandler Handler() => new(_userRepository, _currentUser, _unitOfWork);
 
     [Fact]
     public async Task LocksAnActiveUser_AndSaves()
@@ -41,6 +42,20 @@ public sealed class LockUserCommandHandlerTests
         var result = await Handler().HandleAsync(new LockUserCommand(user.Id));
 
         result.Error.Should().Be(User.AlreadyLocked);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RefusesToLockTheCallersOwnAccount_AndDoesNotSave()
+    {
+        var user = TestUsers.Active();
+        _userRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
+        _currentUser.UserId.Returns((Guid?)user.Id);
+
+        var result = await Handler().HandleAsync(new LockUserCommand(user.Id));
+
+        result.Error.Should().Be(User.CannotLockSelf);
+        user.Status.Should().Be(UserStatus.Active);
         await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

@@ -29,6 +29,14 @@ the user is revoked — the whole chain, not the one presented — and the reque
 is refused. The revocation runs on its own connection so it survives the
 rollback of the refused request.
 
+*Clarified 2026-10-03.* "The whole chain" is the wrong picture of it: every
+active token **of the account** is revoked — every session, including chains
+the replayed token never belonged to. Access tokens already issued are not
+revoked; they work until they expire, fifteen minutes at most, as with locking
+below. Since [ADR 0019](0019-refresh-token-in-an-httponly-cookie.md) the
+refresh token travels in an `HttpOnly` cookie rather than in the body; what it
+does is unchanged.
+
 `RefreshToken` is its own aggregate, not part of `User`. It changes on every
 exchange; inside `User` it would load and lock the entire user on every refresh.
 

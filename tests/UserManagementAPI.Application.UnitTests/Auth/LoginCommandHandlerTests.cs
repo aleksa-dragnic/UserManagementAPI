@@ -85,6 +85,21 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task ALockedUser_WithAWrongPassword_GetsTheSameErrorAsEveryoneElse()
+    {
+        var user = KnownUser(TestUsers.Locked());
+        _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
+        var result = await Handler().HandleAsync(new LoginCommand(user.Email.Value, "wrong"));
+
+        // The lock is checked after the password. Checked first, it would tell
+        // anyone without the password that the address belongs to a locked
+        // account.
+        result.Error.Should().Be(AuthErrors.InvalidCredentials);
+        _tokenService.DidNotReceiveWithAnyArgs().CreateAccessToken(default!, default!);
+    }
+
+    [Fact]
     public async Task RefusesADeactivatedUser_AfterTheCorrectPassword()
     {
         var user = KnownUser(TestUsers.Deactivated());

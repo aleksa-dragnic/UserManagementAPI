@@ -49,3 +49,12 @@ The OpenAPI document describes the plain contract; the linked envelope is
 documented here and in the README rather than as a second schema per endpoint.
 That is the one place the document is less than complete, and it is a
 deliberate trade against doubling every read operation in it.
+
+*Clarified 2026-10-03.* The links are not filtered by the caller's permissions
+either: the read-only demo account receives `update`, `lock` and
+`assign-role`. A client decides what to offer from the `permission` claims in
+its token, not from the links. And the envelope is not the only place the
+OpenAPI document falls short: it also leaves `errorCode`, `traceId` and
+`errors` out of `ProblemDetails`, describes user `status` as an open string,
+omits several statuses and declares no security scheme. The README lists them
+under Known limits.

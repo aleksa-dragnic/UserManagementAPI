@@ -49,6 +49,9 @@ commented at the top of the file.
 A read-only account is seeded for it: `demo@umapi.local` / `Demo-Passw0rd-2026!`.
 It holds the `Member` role, which grants `users.read` and `roles.read`, so
 every GET works and every write answers 403 — which is itself worth seeing.
+Everyone signed in as the demo account draws on the same read budget, 100
+requests a minute per user, so a 429 there usually means someone else is
+exploring at the same moment.
 
 The instance runs on Render's free tier and spins down after fifteen minutes of
 inactivity, so the first request after a quiet period takes up to a minute
@@ -69,26 +72,30 @@ while it wakes up. The database is Neon, also free tier.
 
 **Security**
 - Argon2id password hashing with parameters from configuration
-- Short-lived JWTs with rotating refresh tokens, stored only as hashes, with
-  reuse detection that revokes the whole chain
+- Short-lived JWTs with rotating refresh tokens, stored only as hashes and
+  delivered in an `HttpOnly`, `SameSite=Strict` cookie; a replayed refresh
+  token revokes every session of the account
 - Permission-based authorization — `[HasPermission("users.write")]`, never a
   role name in code, no bare `[Authorize]` anywhere
 - Append-only audit log, enforced by a database trigger, recording which fields
   changed and never their values
-- Per-endpoint rate limiting, security headers, explicit CORS, request size cap
+- Per-endpoint rate limiting, security headers with HSTS, explicit CORS with
+  credentials for named origins only, request size cap
 
 **HTTP surface**
-- RFC 9457 problem details on every failure, with a stable `errorCode`
-- Paging, filtering, searching and whitelisted sorting, with metadata in
-  `X-Pagination`
-- Conditional GET: strong ETags and 304 on `If-None-Match`
+- RFC 9457 problem details with a stable `errorCode` on every failure the
+  application decides; the ones the framework writes are listed under
+  Known limits
+- Paging, filtering, whitelisted sorting and a search that ignores case and
+  diacritics, with metadata in `X-Pagination`
+- Conditional GET: an ETag on every read and 304 on `If-None-Match`
 - URL-segment versioning with v1 and v2 documented separately
 - Opt-in hypermedia behind `application/vnd.umapi.hateoas+json`, a root
   document, `OPTIONS` and `HEAD`
 
 **Operations**
-- OpenTelemetry traces and metrics, a correlation id in every log line and
-  response, liveness and readiness split
+- OpenTelemetry traces and metrics, exported in the compose stack; a
+  correlation id in every log line and response; liveness and readiness split
 - Structured logging with Serilog, rendered as JSON in production so a log record cannot be forged from a request path
 - Multi-stage Docker build, compose stack with PostgreSQL and an OTLP collector
 - GitHub Actions: build with warnings as errors, tests against a real
@@ -136,7 +143,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — seventeen architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone
@@ -156,8 +163,50 @@ a deployed instance they are environment variables.
 | `Database:SeedOnStartup` | Off in production — switched on once for the demo instance |
 | `OpenApi:Enabled` | Publishes the OpenAPI document and Scalar outside development |
 | `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named |
+| `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie |
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
+
+## Known limits
+
+Written down so nobody has to discover them.
+
+- **Last write wins on users.** The ETag on a user is a cache validator, not
+  write protection: users carry no concurrency token and the API does not read
+  `If-Match`, so a stale update overwrites a newer one. Refresh tokens are the
+  one aggregate with a concurrency token, because two simultaneous refreshes
+  must not both rotate.
+- **Revocation ends sessions, not access tokens.** Locking an account, logging
+  out and a detected refresh-token replay stop new access tokens from being
+  issued; one already issued works until it expires, fifteen minutes at most.
+- **Hypermedia links are not filtered.** They describe what the resource
+  supports, not what the caller may do or what its state allows: the read-only
+  demo account receives `update` and `lock`. A client decides from the
+  `permission` claims in its token.
+- **Problem details come in two shapes.** Failures the application decides —
+  validation, domain rules, conflicts, not found, the auth endpoints' own
+  refusals — carry `errorCode` and `traceId`. A 401 for a missing or expired
+  token, a 403, a 406 and a 429 are written by the framework and carry no
+  `errorCode`; the 429 has no `traceId` either.
+- **ETags arrive weak through the CDN.** The API computes strong tags;
+  Cloudflare in front of the deployed instance compresses the body and serves
+  them as `W/"…"`. Conditional GET works either way.
+- **Search is a substring scan.** `petrovic` finds Petrović and `ana petrović`
+  finds Ana Petrović, but `djordjevic` does not find Đorđević: `đ` folds to `d`,
+  not to `dj` ([ADR 0020](docs/adr/0020-accent-insensitive-search-through-unaccent.md)).
+  No index is used; at this size a scan is the right plan.
+- **The OpenAPI document under-describes the instance.** `ProblemDetails`
+  lacks `errorCode`, `traceId` and `errors`; the hypermedia envelope is
+  described in ADR 0013 rather than per operation; user `status` is an open
+  string; 413, 429 and some 400 and 409 answers are not listed; there is no
+  security scheme, so Scalar's auth box is filled by hand.
+- **The deployed instance exports no telemetry.** Traces and metrics are
+  exported in the compose stack (Grafana on port 3000). In production
+  `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, so they are produced and discarded;
+  trace and span ids survive in the JSON logs. Issue #54 records what exporting
+  would take.
+- **HSTS is ASP.NET Core's default**: thirty days, no `includeSubDomains`, no
+  preload. It covers the API's own host and nothing beside it.
 
 ## License
 

@@ -129,6 +129,16 @@ builder.Services.AddObservability(builder.Configuration);
 
 var app = builder.Build();
 
+// A one-off command, not a mode: fill the directory with synthetic users and
+// exit without serving a request. Before MigrateAndSeedAsync on purpose, so the
+// command never migrates a database it was only asked to seed.
+if (args.Contains(DatabaseStartupExtensions.SeedDemoDirectoryCommand))
+{
+    await app.SeedDemoDirectoryAsync();
+    await app.DisposeAsync();
+    return;
+}
+
 await app.MigrateAndSeedAsync();
 
 app.UseForwardedHeaders();

@@ -8,6 +8,13 @@ namespace UserManagementAPI.Api.Extensions;
 public static class DatabaseStartupExtensions
 {
     /// <summary>
+    /// The command-line verb that runs <see cref="DemoDirectorySeeder"/> and
+    /// exits: "dotnet run -- seed-demo-directory", or the same argument after the
+    /// published DLL. It never runs on startup.
+    /// </summary>
+    public const string SeedDemoDirectoryCommand = "seed-demo-directory";
+
+    /// <summary>
     /// Migrates and seeds on startup outside production, so "docker compose up"
     /// and a fresh clone both produce a working database with no extra step.
     ///
@@ -43,5 +50,19 @@ public static class DatabaseStartupExtensions
             var seeder = ActivatorUtilities.CreateInstance<DatabaseSeeder>(scope.ServiceProvider);
             await seeder.SeedAsync();
         }
+    }
+
+    /// <summary>
+    /// Fills the configured database with the synthetic demo directory. No
+    /// migration and no regular seed here: the database is expected to be
+    /// migrated and seeded already, and the seeder refuses to run without the
+    /// roles it assigns.
+    /// </summary>
+    public static async Task SeedDemoDirectoryAsync(this WebApplication app)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+
+        var seeder = ActivatorUtilities.CreateInstance<DemoDirectorySeeder>(scope.ServiceProvider);
+        await seeder.SeedAsync();
     }
 }

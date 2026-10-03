@@ -72,6 +72,16 @@ public sealed class UserCollectionTests(DatabaseFixture fixture) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task Search_IgnoresDiacritics_AndMatchesTheFullName()
+    {
+        var (unaccented, _) = await GetAsync("?searchTerm=petrovic");
+        var (fullName, _) = await GetAsync($"?searchTerm={Uri.EscapeDataString("FIRST02 Petrović")}");
+
+        unaccented.Should().HaveCount(4).And.OnlyContain(user => user.LastName == "Petrović");
+        fullName.Select(user => user.Email).Should().Equal("user02@example.com");
+    }
+
+    [Fact]
     public async Task Filter_ReturnsOnlyTheRequestedStatus()
     {
         var (users, pagination) = await GetAsync("?status=locked");

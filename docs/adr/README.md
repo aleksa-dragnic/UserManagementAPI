@@ -24,3 +24,4 @@ in the pull request that implements it.
 | [0017](0017-no-data-shaping.md) | No data shaping on collection endpoints | M5 |
 | [0018](0018-json-console-logs-in-production.md) | JSON console logs in production | post-1.0 |
 | [0019](0019-refresh-token-in-an-httponly-cookie.md) | The refresh token travels in an HttpOnly cookie | post-1.0 |
+| [0020](0020-accent-insensitive-search-through-unaccent.md) | Accent-insensitive search through unaccent | post-1.0 |

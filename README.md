@@ -173,8 +173,8 @@ a deployed instance they are environment variables.
 | `Database:MigrateOnStartup` | Off in production — migrations are a deliberate step |
 | `Database:SeedOnStartup` | Off in production — switched on once for the demo instance |
 | `OpenApi:Enabled` | Publishes the OpenAPI document and Scalar outside development |
-| `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named |
-| `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie |
+| `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named. `appsettings.Development.json` names the console's dev server, `http://localhost:5173` |
+| `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie; on in `appsettings.Development.json` |
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
 

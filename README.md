@@ -55,7 +55,7 @@ seeded users cannot sign in: their password hash matches no password.
 
 ## Live demo
 
-**https://usermanagementapi-j1if.onrender.com/scalar**
+**https://api.aleksadragnic.com/scalar**
 
 A read-only account is seeded for it: `demo@umapi.local` / `Demo-Passw0rd-2026!`.
 It holds the `Member` role, which grants `users.read` and `roles.read`, so
@@ -63,6 +63,10 @@ every GET works and every write answers 403 — which is itself worth seeing.
 Everyone signed in as the demo account draws on the same read budget, 100
 requests a minute per user, so a 429 there usually means someone else is
 exploring at the same moment.
+
+The admin console, [Umapi-Console](https://github.com/aleksa-dragnic/Umapi-Console),
+runs against this instance at **https://console.aleksadragnic.com** and signs in
+with the same account.
 
 The instance runs on Render's free tier and spins down after fifteen minutes of
 inactivity, so the first request after a quiet period takes up to a minute
@@ -173,8 +177,8 @@ a deployed instance they are environment variables.
 | `Database:MigrateOnStartup` | Off in production — migrations are a deliberate step |
 | `Database:SeedOnStartup` | Off in production — switched on once for the demo instance |
 | `OpenApi:Enabled` | Publishes the OpenAPI document and Scalar outside development |
-| `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named. `appsettings.Development.json` names the console's dev server, `http://localhost:5173` |
-| `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie; on in `appsettings.Development.json` |
+| `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named. `appsettings.Development.json` names the console's dev server, `http://localhost:5173`; the demo instance names the console, `https://console.aleksadragnic.com` |
+| `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie; on in `appsettings.Development.json` and on the demo instance |
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
 

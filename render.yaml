@@ -38,6 +38,12 @@ services:
         value: admin@umapi.local
       - key: RateLimiting__Auth__PermitLimit
         value: "10"
+      # The admin console is the one cross-origin client, and it sends the
+      # refresh cookie (ADR 0019).
+      - key: Cors__AllowedOrigins__0
+        value: https://console.aleksadragnic.com
+      - key: Cors__AllowCredentials
+        value: "true"
       - key: ConnectionStrings__Default
         sync: false
       - key: Jwt__SigningKey

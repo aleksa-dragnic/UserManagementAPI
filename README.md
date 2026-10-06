@@ -12,7 +12,9 @@ scope and deep in execution — the domain is small enough to model properly,
 which makes it a place to show what a well-built .NET service actually looks
 like: a domain model that owns its own invariants, a clean split between the
 write and read paths, and an HTTP surface that behaves the way a REST API is
-supposed to.
+supposed to. Its admin console,
+[Umapi-Console](https://github.com/aleksa-dragnic/Umapi-Console), runs against
+the live instance at **https://console.aleksadragnic.com**.
 
 It is a personal project built to a production standard. It is not running a
 business and has no users but its author.
@@ -203,9 +205,12 @@ Written down so nobody has to discover them.
   refusals — carry `errorCode` and `traceId`. A 401 for a missing or expired
   token, a 403, a 406 and a 429 are written by the framework and carry no
   `errorCode`; the 429 has no `traceId` either.
-- **ETags arrive weak through the CDN.** The API computes strong tags;
-  Cloudflare in front of the deployed instance compresses the body and serves
-  them as `W/"…"`. Conditional GET works either way.
+- **ETags arrive weak only without compression.** The API computes strong
+  tags. Cloudflare in front of the deployed instance passes them through on a
+  compressed response (`Content-Encoding: br`, which every browser asks for)
+  and serves them as `W/"…"` when it sends the body uncompressed, as it does
+  to `curl` without `--compressed`. Measured on 2026-10-06 from the console's
+  side. Conditional GET works either way, because the API compares weakly.
 - **Search is a substring scan.** `petrovic` finds Petrović and `ana petrović`
   finds Ana Petrović, but `djordjevic` does not find Đorđević: `đ` folds to `d`,
   not to `dj` ([ADR 0020](docs/adr/0020-accent-insensitive-search-through-unaccent.md)).

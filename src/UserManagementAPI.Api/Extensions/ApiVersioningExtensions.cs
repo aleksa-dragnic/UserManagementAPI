@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using Asp.Versioning.OpenApi;
 
+using UserManagementAPI.Api.OpenApi;
+
 namespace UserManagementAPI.Api.Extensions;
 
 /// <summary>
@@ -37,7 +39,18 @@ public static class ApiVersioningExtensions
             // plain AddOpenApi() as well registers services that are then replaced
             // (analyzer AV0029). One document per version then comes from
             // WithDocumentPerVersion() on the mapped endpoint in Program.cs.
-            .AddOpenApi();
+            //
+            // The transformers describe what the pipeline does around the
+            // actions: the bearer scheme, the problem details extensions, the
+            // closed set of user states, and the 413 and 429 refusals.
+            .AddOpenApi(options =>
+            {
+                options.Document.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+                options.Document.AddOperationTransformer<BearerSecurityRequirementTransformer>();
+                options.Document.AddOperationTransformer<LimitResponsesTransformer>();
+                options.Document.AddSchemaTransformer<ProblemDetailsSchemaTransformer>();
+                options.Document.AddSchemaTransformer<UserStatusSchemaTransformer>();
+            });
 
         return services;
     }

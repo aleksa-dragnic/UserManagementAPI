@@ -29,6 +29,11 @@ public sealed class LockUserCommandHandler(
             return Result.Failure(User.NotFound);
         }
 
+        if (!userRepository.IsCurrent(user, command.ExpectedVersion))
+        {
+            return Result.Failure(User.VersionMismatch);
+        }
+
         var locked = user.Lock();
 
         if (locked.IsFailure)

@@ -9,4 +9,5 @@ public sealed record UserDetailsDto(
     string Status,
     IReadOnlyList<UserRoleDto> Roles,
     DateTime CreatedAtUtc,
-    DateTime UpdatedAtUtc);
+    DateTime UpdatedAtUtc,
+    uint Version);

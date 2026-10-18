@@ -14,6 +14,7 @@ using UserManagementAPI.Application.Users.Commands.LockUser;
 using UserManagementAPI.Application.Users.Commands.RemoveRole;
 using UserManagementAPI.Application.Users.Commands.UnlockUser;
 using UserManagementAPI.Application.Users.Queries.GetUserById;
+using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.Api.Controllers.V1;
@@ -153,10 +154,20 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Update(Guid id, UpdateUserRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(
+        Guid id,
+        UpdateUserRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.SendAsync(request.ToCommand(id), cancellationToken);
+        if (!IfMatchHeader.TryRead(ifMatch, out var expectedVersion))
+        {
+            return Result.Failure(IfMatchHeader.Invalid).ToProblem(HttpContext);
+        }
+
+        var result = await dispatcher.SendAsync(request.ToCommand(id, expectedVersion), cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }
@@ -174,9 +185,18 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Lock(Guid id, CancellationToken cancellationToken)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> Lock(
+        Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.SendAsync(new LockUserCommand(id), cancellationToken);
+        if (!IfMatchHeader.TryRead(ifMatch, out var expectedVersion))
+        {
+            return Result.Failure(IfMatchHeader.Invalid).ToProblem(HttpContext);
+        }
+
+        var result = await dispatcher.SendAsync(new LockUserCommand(id, expectedVersion), cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }
@@ -190,9 +210,18 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Unlock(Guid id, CancellationToken cancellationToken)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> Unlock(
+        Guid id,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.SendAsync(new UnlockUserCommand(id), cancellationToken);
+        if (!IfMatchHeader.TryRead(ifMatch, out var expectedVersion))
+        {
+            return Result.Failure(IfMatchHeader.Invalid).ToProblem(HttpContext);
+        }
+
+        var result = await dispatcher.SendAsync(new UnlockUserCommand(id, expectedVersion), cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }
@@ -206,10 +235,20 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> AssignRole(Guid id, AssignRoleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> AssignRole(
+        Guid id,
+        AssignRoleRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.SendAsync(request.ToCommand(id), cancellationToken);
+        if (!IfMatchHeader.TryRead(ifMatch, out var expectedVersion))
+        {
+            return Result.Failure(IfMatchHeader.Invalid).ToProblem(HttpContext);
+        }
+
+        var result = await dispatcher.SendAsync(request.ToCommand(id, expectedVersion), cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }
@@ -223,9 +262,19 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RemoveRole(Guid id, Guid roleId, CancellationToken cancellationToken)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> RemoveRole(
+        Guid id,
+        Guid roleId,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await dispatcher.SendAsync(new RemoveRoleCommand(id, roleId), cancellationToken);
+        if (!IfMatchHeader.TryRead(ifMatch, out var expectedVersion))
+        {
+            return Result.Failure(IfMatchHeader.Invalid).ToProblem(HttpContext);
+        }
+
+        var result = await dispatcher.SendAsync(new RemoveRoleCommand(id, roleId, expectedVersion), cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem(HttpContext);
     }

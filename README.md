@@ -109,6 +109,9 @@ while it wakes up. The database is Neon, also free tier.
 - Paging, filtering, whitelisted sorting and a search that ignores case and
   diacritics, with metadata in `X-Pagination`
 - Conditional GET: an ETag on every read and 304 on `If-None-Match`
+- Optimistic concurrency on users: the detail carries a `version`, a write
+  that sends it back in `If-Match` is refused with 412 once it is stale
+  ([ADR 0021](docs/adr/0021-optimistic-concurrency-on-users.md))
 - URL-segment versioning with v1 and v2 documented separately
 - Opt-in hypermedia behind `application/vnd.umapi.hateoas+json`, a root
   document, `OPTIONS` and `HEAD`
@@ -152,8 +155,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-309 test cases in 279 test methods: 97 in the domain, 91 in the application
-and 121 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+318 test cases in 286 test methods: 97 in the domain, 93 in the application
+and 128 integration tests (counted on 2026-10-18; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 
@@ -168,7 +171,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — twenty architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty-one architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone
@@ -206,11 +209,10 @@ a deployed instance they are environment variables.
 
 Written down so nobody has to discover them.
 
-- **Last write wins on users.** The ETag on a user is a cache validator, not
-  write protection: users carry no concurrency token and the API does not read
-  `If-Match`, so a stale update overwrites a newer one. Refresh tokens are the
-  one aggregate with a concurrency token, because two simultaneous refreshes
-  must not both rotate.
+- **Concurrency is opt-in for clients.** A write that sends the user's
+  `version` in `If-Match` cannot overwrite a newer state; a write without it
+  still replaces whatever is there, so clients written against 2.0 keep
+  working. The ETag stays a cache validator, not write protection (ADR 0021).
 - **Revocation ends sessions, not access tokens.** Locking an account, logging
   out and a detected refresh-token replay stop new access tokens from being
   issued; one already issued works until it expires, fifteen minutes at most.

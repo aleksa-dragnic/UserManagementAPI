@@ -8,7 +8,7 @@ column list is in [`architecture.md`](architecture.md#schema).
 
 | Table | Holds | Notes |
 |---|---|---|
-| `users` | The User aggregate's root row | `email` is `citext` with a unique index, so case does not make a second account |
+| `users` | The User aggregate's root row | `email` is `citext` with a unique index, so case does not make a second account; `xmin` is its concurrency token and the `version` clients send back (ADR 0021) |
 | `user_roles` | The roles a user holds | Part of the User aggregate; unique per user and role |
 | `roles`, `role_permissions`, `permissions` | Roles and what they grant | Seeded by `DatabaseSeeder`, not by migrations |
 | `refresh_tokens` | Refresh tokens, as SHA-256 hashes only | Its own aggregate; `xmin` is its concurrency token (ADR 0009) |
@@ -42,8 +42,11 @@ the fields that changed, never their values.
 
 ## Migrations
 
-Seven, in order: `InitialSchema`, `DomainGeneratedKeys`, `AddOutbox`,
-`AddRefreshTokens`, `AddAuditLog`, `AddHardening`, `AddUnaccent`.
+Eight, in order: `InitialSchema`, `DomainGeneratedKeys`, `AddOutbox`,
+`AddRefreshTokens`, `AddAuditLog`, `AddHardening`, `AddUnaccent`,
+`AddUserVersion`. `AddUserVersion` changes nothing in the database: `xmin` is a
+system column every row already has, and the migration only records it in the
+model snapshot.
 
 - **Locally and in the compose stack** the API applies them on startup
   (`Database:MigrateOnStartup` is on in Development).

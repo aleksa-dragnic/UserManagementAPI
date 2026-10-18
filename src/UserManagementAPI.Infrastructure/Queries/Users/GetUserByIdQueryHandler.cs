@@ -6,6 +6,7 @@ using UserManagementAPI.Application.Users.Queries.GetUserById;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Persistence;
+using UserManagementAPI.Infrastructure.Persistence.Configurations;
 
 namespace UserManagementAPI.Infrastructure.Queries.Users;
 
@@ -37,7 +38,8 @@ internal sealed class GetUserByIdQueryHandler(AppDbContext context)
                  select new UserRoleDto(role.Id, role.Name, assignment.AssignedAtUtc))
                 .ToList(),
                 candidate.CreatedAtUtc,
-                candidate.UpdatedAtUtc))
+                candidate.UpdatedAtUtc,
+                EF.Property<uint>(candidate, UserConfiguration.UserVersion)))
             .SingleOrDefaultAsync(cancellationToken);
 
         return user is null

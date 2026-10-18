@@ -28,6 +28,34 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
+    public async Task ReturnsVersionMismatch_AndDoesNotSave_WhenTheExpectedVersionIsStale()
+    {
+        var user = TestUsers.Active();
+        _userRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
+        _userRepository.VersionOf(user).Returns(8u);
+
+        var result = await Handler().HandleAsync(
+            new UpdateUserCommand(user.Id, "ana@example.com", "Ana", "Petrović", ExpectedVersion: 7u));
+
+        result.Error.Should().Be(User.VersionMismatch);
+        await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Saves_WhenTheExpectedVersionIsCurrent()
+    {
+        var user = TestUsers.Active();
+        _userRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
+        _userRepository.VersionOf(user).Returns(8u);
+
+        var result = await Handler().HandleAsync(
+            new UpdateUserCommand(user.Id, "ana@example.com", "Ana", "Petrović", ExpectedVersion: 8u));
+
+        result.IsSuccess.Should().BeTrue();
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ReturnsNotFound_WhenTheUserDoesNotExist()
     {
         var result = await Handler().HandleAsync(

@@ -17,6 +17,11 @@ public sealed class RemoveRoleCommandHandler(
             return Result.Failure(User.NotFound);
         }
 
+        if (!userRepository.IsCurrent(user, command.ExpectedVersion))
+        {
+            return Result.Failure(User.VersionMismatch);
+        }
+
         var removed = user.RemoveRole(command.RoleId);
 
         if (removed.IsFailure)

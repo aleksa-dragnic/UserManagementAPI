@@ -7,8 +7,8 @@ namespace UserManagementAPI.Application.Auth.Commands.RefreshToken;
 
 /// <summary>
 /// Exchanges a refresh token for a new pair, rotating the old one. A token that
-/// was already exchanged and is presented again means the chain is compromised:
-/// every active token for that user is revoked — on its own connection, so the
+/// was already exchanged and is presented again means the account's tokens are
+/// compromised: every active token for that user is revoked — on its own connection, so the
 /// revocation survives this request's rollback — and the request is refused.
 /// </summary>
 public sealed class RefreshTokenCommandHandler(

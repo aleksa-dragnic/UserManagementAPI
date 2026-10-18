@@ -8,8 +8,8 @@ namespace UserManagementAPI.Domain.Auth;
 ///
 /// Only the hash of the token is held. A database leak must not yield usable
 /// tokens. ReplacedById records the rotation chain: a token that was already
-/// exchanged and is presented again is proof of theft, and the whole chain for
-/// that user is revoked rather than the one token presented.
+/// exchanged and is presented again is proof of theft, and every active token
+/// of that user is revoked rather than the one token presented.
 /// </summary>
 public sealed class RefreshToken : AggregateRoot
 {

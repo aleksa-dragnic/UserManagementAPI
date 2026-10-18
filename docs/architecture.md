@@ -23,8 +23,11 @@ controller may name an Infrastructure type.
 
 **Writes** go through the domain. The controller maps the request to a command,
 the dispatcher wraps the handler in logging, validation and a transaction, and
-the handler orchestrates — it holds no business rule. The aggregate enforces
-its invariants and raises domain events, which are dispatched *before* commit,
+the handler orchestrates. Business rules live in the aggregate, with two
+exceptions that need something the aggregate cannot see: refusing to lock your
+own account needs the caller, and a unique email needs the database, so both
+are checked in the handler. The aggregate enforces its invariants and raises
+domain events, which are dispatched *before* commit,
 inside the same transaction, so a failing handler rolls the write back (ADR
 0007). Anything that must leave the service is written to the outbox in that
 same transaction and published afterwards (ADR 0008).
@@ -72,18 +75,21 @@ two name fields, and neither the query, the read model nor the aggregate moved.
 
 ```
 users              id uuid PK, email citext UNIQUE, password_hash text,
-                   name_first text, name_last text, status_id int,
+                   name_first varchar(100), name_last varchar(100), status_id int,
                    created_at_utc timestamptz, updated_at_utc timestamptz
-roles              id uuid PK, name text UNIQUE
-permissions        id uuid PK, code text UNIQUE
+roles              id uuid PK, name varchar(100) UNIQUE
+permissions        id uuid PK, code varchar(100) UNIQUE
 user_roles         id uuid PK, user_id FK, role_id FK, assigned_at_utc, UNIQUE (user_id, role_id)
 role_permissions   id uuid PK, role_id FK, permission_id FK, UNIQUE (role_id, permission_id)
 refresh_tokens     id uuid PK, user_id FK, token_hash varchar(64) UNIQUE,
-                   expires_at_utc, revoked_at_utc, replaced_by_id uuid, xmin (concurrency)
-audit_log          id bigint identity PK, actor_id uuid, action text,
-                   entity text, entity_id uuid, payload jsonb, at_utc timestamptz
-outbox_messages    id uuid PK, type text, payload jsonb,
-                   occurred_on_utc, processed_on_utc, attempts int, error text
+                   created_at_utc, expires_at_utc, revoked_at_utc,
+                   replaced_by_id uuid, xmin (concurrency)
+audit_log          id bigint identity PK, actor_id uuid, action varchar(20),
+                   entity varchar(100), entity_id varchar(200), payload jsonb,
+                   occurred_at_utc timestamptz
+outbox_messages    id uuid PK, type varchar(500), payload jsonb, occurred_on_utc,
+                   processed_on_utc, next_attempt_on_utc, attempts int,
+                   error varchar(2000)
 ```
 
 Aggregate boundaries are wider than the foreign keys suggest:

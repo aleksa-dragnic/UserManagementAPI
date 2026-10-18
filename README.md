@@ -149,6 +149,10 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
+294 test cases in 267 test methods: 95 in the domain, 89 in the application
+and 110 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+each).
+
 ```bash
 dotnet test UserManagementAPI.sln --configuration Release
 ```
@@ -175,13 +179,18 @@ a deployed instance they are environment variables.
 | `ConnectionStrings:Default` | The pooled Neon connection string the application uses |
 | `ConnectionStrings:Migrations` | The direct one `dotnet ef` uses |
 | `Jwt:SigningKey` | At least 64 characters; startup fails fast without it |
-| `Seed:AdministratorPassword` | The bootstrap administrator's password |
+| `Jwt:Issuer`, `Jwt:Audience` | Written into and required of every token; `usermanagementapi` by default |
+| `Jwt:AccessTokenLifetime`, `Jwt:RefreshTokenLifetime` | Fifteen minutes and seven days by default |
+| `Argon2:MemorySizeKb`, `Argon2:Iterations`, `Argon2:DegreeOfParallelism` | Hashing cost; 19 456 KB, 2, 1 by default (OWASP's minimum for Argon2id) |
+| `Seed:AdministratorEmail`, `Seed:AdministratorPassword` | The bootstrap administrator |
+| `Seed:DemoEmail`, `Seed:DemoPassword` | The read-only demo account; it is not created while the password is empty |
 | `Database:MigrateOnStartup` | Off in production — migrations are a deliberate step |
 | `Database:SeedOnStartup` | Off in production — switched on once for the demo instance |
 | `OpenApi:Enabled` | Publishes the OpenAPI document and Scalar outside development |
 | `Cors:AllowedOrigins` | Empty by default; no cross-origin request is allowed until an origin is named. `appsettings.Development.json` names the console's dev server, `http://localhost:5173`; the demo instance names the console, `https://console.aleksadragnic.com` |
 | `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie; on in `appsettings.Development.json` and on the demo instance |
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
+| `Outbox:*` | Batch size, polling interval, attempts and backoff of the outbox processor |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
 
 ## Known limits
@@ -206,7 +215,8 @@ Written down so nobody has to discover them.
   token, a 403, a 406 and a 429 are written by the framework and carry no
   `errorCode`; the 429 has no `traceId` either.
 - **ETags arrive weak only without compression.** The API computes strong
-  tags. Cloudflare in front of the deployed instance passes them through on a
+  tags. Render's edge in front of the deployed instance, which Render serves
+  through Cloudflare, passes them through on a
   compressed response (`Content-Encoding: br`, which every browser asks for)
   and serves them as `W/"…"` when it sends the body uncompressed, as it does
   to `curl` without `--compressed`. Measured on 2026-10-06 from the console's
@@ -225,6 +235,10 @@ Written down so nobody has to discover them.
   `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, so they are produced and discarded;
   trace and span ids survive in the JSON logs. Issue #54 records what exporting
   would take.
+- **The audit log is append-only against the application, not the owner.**
+  A database trigger refuses `UPDATE` and `DELETE` on `audit_log`; `TRUNCATE`
+  is deliberately left alone, and whoever owns the database can drop the
+  trigger.
 - **HSTS is ASP.NET Core's default**: thirty days, no `includeSubDomains`, no
   preload. It covers the API's own host and nothing beside it.
 

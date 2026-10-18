@@ -1,0 +1,9 @@
+# Every text file is stored and checked out with LF. The repository is
+# written on Windows; without this, autocrlf settings decide line endings
+# per machine and a diff can show a whole file as changed.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary

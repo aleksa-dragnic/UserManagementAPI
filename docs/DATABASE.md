@@ -54,6 +54,10 @@ model snapshot.
   workstation with `dotnet ef database update`, against the **direct** Neon
   connection string (`ConnectionStrings:Migrations`), before deploying code that
   needs the new schema. The service does not migrate on startup.
+- Every CI run publishes an idempotent script of all migrations as the
+  `migrations` artifact. It can be read before a deploy and applied with
+  `psql` instead of the SDK. `MigrationsTests` fails the build when the model
+  has a change no migration carries.
 - The design-time factory reads `ConnectionStrings:Migrations` because the
   pooled endpoint runs in transaction mode and breaks the session-level steps a
   migration takes (ADR 0002).

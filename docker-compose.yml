@@ -40,7 +40,7 @@ services:
   # only — a deployed instance points OTEL_EXPORTER_OTLP_ENDPOINT at whatever
   # collector it has, or leaves it unset and exports nothing.
   otel:
-    image: grafana/otel-lgtm:latest
+    image: grafana/otel-lgtm:0.35.0
     container_name: umapi-otel
     ports:
       - "3000:3000"

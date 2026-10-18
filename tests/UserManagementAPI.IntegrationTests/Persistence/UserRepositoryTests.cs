@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
@@ -68,7 +69,7 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
     }
 
     [Fact]
-    public async Task ADuplicateEmail_ViolatesTheUniqueIndex()
+    public async Task ADuplicateEmail_ViolatesTheUniqueIndex_AndSurfacesAsTheDomainError()
     {
         await using (var seedContext = fixture.CreateContext())
         {
@@ -82,7 +83,10 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
 
         var act = async () => await context.SaveChangesAsync();
 
-        await act.Should().ThrowAsync<DbUpdateException>();
+        // The handler's check-then-insert leaves a window; when two requests
+        // race through it, the index decides and the client still gets 409.
+        (await act.Should().ThrowAsync<DomainException>())
+            .Which.Error.Should().Be(User.EmailNotUnique);
     }
 
     [Fact]

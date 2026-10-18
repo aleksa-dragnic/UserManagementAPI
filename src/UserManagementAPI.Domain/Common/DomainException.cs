@@ -11,5 +11,12 @@ public sealed class DomainException : Exception
     public DomainException(Error error)
         : base(error.Description) => Error = error;
 
+    /// <summary>
+    /// The same rule enforced one layer down, by the database: the error is what
+    /// the client sees, the inner exception is what the log keeps.
+    /// </summary>
+    public DomainException(Error error, Exception innerException)
+        : base(error.Description, innerException) => Error = error;
+
     public Error Error { get; }
 }

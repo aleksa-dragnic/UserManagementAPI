@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
+using Npgsql;
+
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Users.Queries.GetUsers;
 using UserManagementAPI.Domain.Auth;
@@ -67,9 +69,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     }
 
     /// <summary>
+    /// The unique index on users.email (InitialSchema). Registration and an
+    /// email change check for a taken address first; two requests that pass the
+    /// check together are separated here, by the index.
+    /// </summary>
+    private const string UserEmailIndex = "ix_users_email";
+
+    /// <summary>
     /// Translates the EF concurrency failure into an application exception, so
     /// the one place that knows about optimistic concurrency is the persistence
-    /// layer and every caller sees a type it is allowed to name.
+    /// layer and every caller sees a type it is allowed to name. A unique
+    /// violation on the email index becomes the domain error the handlers'
+    /// own check returns, so a lost race still answers 409 rather than 500.
     /// </summary>
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -82,6 +93,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             throw new ConcurrencyConflictException(
                 "The record was modified by another request. Read it again and retry.",
                 exception);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: UserEmailIndex
+        })
+        {
+            throw new DomainException(User.EmailNotUnique, exception);
         }
     }
 

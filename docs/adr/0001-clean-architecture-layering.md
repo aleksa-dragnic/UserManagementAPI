@@ -32,10 +32,14 @@ for someone else to implement. `Infrastructure` references both and implements
 them. `Api` references `Application`, and `Infrastructure` only in `Program.cs`
 and the extension methods it calls, to wire the container.
 
-The rule is enforced rather than documented: the apply script for every PR
-greps the Domain project for a `PackageReference`, greps Application for an EF
-Core or ASP.NET using, and greps the controllers for an Infrastructure type.
-A violation fails the run.
+The rule is enforced rather than documented, by architecture tests that read
+the compiled assemblies: `LayeringTests` asserts that Domain depends on nothing
+but the base class library and that Application depends on no persistence or
+web framework, and `ApiLayeringTests` asserts that no controller names an
+Infrastructure type. A violation fails the build. Until those tests were added
+after `v1.0.0` the same rules were greps in a helper script for each pull
+request; that script was never committed, so nothing in the repository
+enforced them (BUILD-PLAN section 14).
 
 ## Consequences
 

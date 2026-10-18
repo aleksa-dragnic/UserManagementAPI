@@ -42,6 +42,21 @@ public sealed class ObservabilityTests(DatabaseFixture fixture) : IAsyncLifetime
             .Should().Be("test-correlation-id");
     }
 
+    [Theory]
+    [InlineData("has spaces in it")]
+    [InlineData("semi;colon")]
+    [InlineData("an-id-that-is-much-longer-than-the-sixty-four-characters-allowed-for-one")]
+    public async Task AMalformedCorrelationIdFromTheClient_IsReplaced(string fromClient)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/health/live");
+        request.Headers.TryAddWithoutValidation(CorrelationIdMiddleware.HeaderName, fromClient);
+
+        var response = await _factory.CreateClient().SendAsync(request);
+
+        response.Headers.GetValues(CorrelationIdMiddleware.HeaderName).Single()
+            .Should().NotBe(fromClient).And.NotBeNullOrWhiteSpace();
+    }
+
     [Fact]
     public async Task LivenessAndReadiness_AreBothHealthy_WithTheDatabaseUp()
     {

@@ -21,7 +21,8 @@ public sealed class RefreshToken : AggregateRoot
 
     public static readonly Error AlreadyRevoked = new(
         "RefreshToken.AlreadyRevoked",
-        "The refresh token is already revoked.");
+        "The refresh token is already revoked.",
+        ErrorType.Conflict);
 
     private RefreshToken(Guid id, Guid userId, string tokenHash, DateTime expiresAtUtc)
         : base(id)

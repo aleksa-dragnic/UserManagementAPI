@@ -18,13 +18,14 @@ public sealed class Role : AggregateRoot
 
     public static readonly Error PermissionAlreadyAdded = new(
         "Role.PermissionAlreadyAdded",
-        "The role already holds this permission.");
+        "The role already holds this permission.",
+        ErrorType.Conflict);
 
     public static readonly Error PermissionNotHeld = new(
         "Role.PermissionNotHeld",
         "The role does not hold this permission.");
 
-    public static readonly Error NotFound = new("Role.NotFound", "The role was not found.");
+    public static readonly Error NotFound = new("Role.NotFound", "The role was not found.", ErrorType.NotFound);
 
     private readonly List<RolePermission> _permissions = [];
 

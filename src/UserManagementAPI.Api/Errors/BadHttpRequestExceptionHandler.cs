@@ -49,9 +49,7 @@ internal sealed class BadHttpRequestExceptionHandler(
 
         var problem = new ProblemDetails
         {
-            Type = status == ContentTooLarge
-                ? "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.14"
-                : "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.1",
+            Type = ProblemTypes.For(status),
             Title = status == ContentTooLarge ? "Content too large" : "Bad request",
             Status = status,
             Detail = status == ContentTooLarge

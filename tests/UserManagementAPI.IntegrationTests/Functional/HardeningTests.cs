@@ -61,6 +61,9 @@ public sealed class HardeningTests(DatabaseFixture fixture) : IAsyncLifetime
         response.Headers.GetValues("X-Frame-Options").Single().Should().Be("DENY");
         response.Headers.GetValues("Referrer-Policy").Single().Should().Be("no-referrer");
         response.Headers.GetValues("Content-Security-Policy").Single().Should().Contain("default-src 'none'");
+        response.Headers.GetValues("Permissions-Policy").Single().Should().Contain("camera=()");
+        response.Headers.GetValues("Cross-Origin-Opener-Policy").Single().Should().Be("same-origin");
+        response.Headers.GetValues("Cross-Origin-Resource-Policy").Single().Should().Be("same-site");
     }
 
     [Fact]

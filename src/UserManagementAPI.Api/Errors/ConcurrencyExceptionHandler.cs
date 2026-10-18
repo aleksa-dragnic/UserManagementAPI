@@ -26,7 +26,7 @@ internal sealed class ConcurrencyExceptionHandler(IProblemDetailsService problem
 
         var problem = new ProblemDetails
         {
-            Type = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.10",
+            Type = ProblemTypes.For(StatusCodes.Status409Conflict),
             Title = "Conflict",
             Status = StatusCodes.Status409Conflict,
             Detail = "The record was modified by another request. Read it again and retry.",

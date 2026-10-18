@@ -1,5 +1,9 @@
 # 0015 — Multi-tenancy and OIDC explicitly out of scope
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #16
+
 ## Context
 
 Two features sit next to a user-management API and get asked about first.

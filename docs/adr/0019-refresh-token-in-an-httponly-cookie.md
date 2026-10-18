@@ -1,5 +1,10 @@
 # 0019 — The refresh token travels in an HttpOnly cookie
 
+- **Status:** Accepted
+- **Date:** 2026-10-03
+- **PR:** #50
+- **Amends:** [0009](0009-short-lived-jwts-with-rotating-refresh-tokens.md)
+
 ## Context
 
 Login and refresh returned both tokens in the response body, and refresh and

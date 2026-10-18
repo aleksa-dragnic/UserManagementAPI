@@ -1,5 +1,9 @@
 # 0020 — Accent-insensitive search through unaccent
 
+- **Status:** Accepted
+- **Date:** 2026-10-03
+- **PR:** #56
+
 ## Context
 
 The user search matched a lowercased term against the email, the first name and

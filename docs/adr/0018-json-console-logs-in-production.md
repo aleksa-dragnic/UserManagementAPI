@@ -1,5 +1,9 @@
 # 0018 — JSON console logs in production
 
+- **Status:** Accepted
+- **Date:** 2026-09-12
+- **PR:** #38
+
 ## Context
 
 CodeQL reported two medium-severity log-forging findings in

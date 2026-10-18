@@ -1,5 +1,9 @@
 # 0012 — Testcontainers instead of the EF Core in-memory provider
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #8
+
 ## Context
 
 Integration tests need a database. The in-memory provider is the convenient

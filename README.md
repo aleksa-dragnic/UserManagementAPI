@@ -17,7 +17,9 @@ supposed to. Its admin console,
 the live instance at **https://console.aleksadragnic.com**.
 
 It is a personal project built to a production standard. It is not running a
-business and has no users but its author.
+business and has no users but its author. It is built with the help of an AI
+coding agent (Claude Code), under the rules in [`AGENTS.md`](AGENTS.md); every
+change goes through a pull request and CI like any other.
 
 ## Quick start
 
@@ -150,9 +152,10 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-294 test cases in 267 test methods: 95 in the domain, 89 in the application
-and 110 integration tests (counted on 2026-10-18; `[Theory]` rows count once
-each).
+301 test cases in 274 test methods: 97 in the domain, 91 in the application
+and 113 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
+the tests follow.
 
 ```bash
 dotnet test UserManagementAPI.sln --configuration Release
@@ -169,6 +172,11 @@ running; no connection string is needed.
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone
+- [`docs/DATABASE.md`](docs/DATABASE.md) — tables, indexes, the append-only
+  audit log, migrations and Neon
+- [`docs/TESTING.md`](docs/TESTING.md) — what each test level covers and how to
+  run it
+- [`SECURITY.md`](SECURITY.md) — how to report a vulnerability
 
 ## Configuration
 

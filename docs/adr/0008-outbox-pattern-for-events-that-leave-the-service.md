@@ -1,5 +1,9 @@
 # 0008 — Outbox pattern for events that leave the service
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #13
+
 ## Context
 
 Domain events are dispatched inside the write transaction (ADR 0007). That is

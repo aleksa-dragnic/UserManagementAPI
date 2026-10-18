@@ -1,5 +1,9 @@
 # 0014 — Mapperly for compile-time mapping
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #12
+
 ## Context
 
 Keeping HTTP contracts separate from commands (ADR 0011) means mapping between

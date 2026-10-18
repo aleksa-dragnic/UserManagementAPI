@@ -1,0 +1,25 @@
+name: Bug
+description: Something the API does that it should not, or does not do that the documentation says it does.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The request you sent and the response you got. Remove tokens and passwords.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Link the README section, ADR or OpenAPI operation that says so, if there is one.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The demo instance, the compose stack, or a local run, and the version or commit.
+    validations:
+      required: true

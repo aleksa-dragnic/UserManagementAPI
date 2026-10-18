@@ -1,5 +1,9 @@
 # 0010 — Permission-based authorization policies rather than role checks
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #16
+
 ## Context
 
 Every mutating endpoint needs a gate. The habitual gate is a role check:

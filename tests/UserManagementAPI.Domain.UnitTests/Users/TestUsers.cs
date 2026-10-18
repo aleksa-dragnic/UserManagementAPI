@@ -20,11 +20,15 @@ internal static class TestUsers
     public static PasswordHash Hash(string value = "argon2id$hash") =>
         PasswordHash.Create(value).Value;
 
-    public static User Pending() => User.Register(Email(), Name(), Hash()).Value;
+    /// <summary>The role every test user starts with unless a test names another.</summary>
+    public static readonly Guid MemberRoleId = Guid.NewGuid();
 
-    public static User Active()
+    public static User Pending(Guid? initialRoleId = null) =>
+        User.Register(Email(), Name(), Hash(), initialRoleId ?? MemberRoleId).Value;
+
+    public static User Active(Guid? initialRoleId = null)
     {
-        var user = Pending();
+        var user = Pending(initialRoleId);
         user.VerifyEmail();
         return user;
     }

@@ -114,9 +114,8 @@ public sealed class DatabaseSeeder(
         var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.AdministratorPassword)).Value;
         var name = PersonName.Create("System", "Administrator").Value;
 
-        var administrator = User.Register(email, name, passwordHash).Value;
+        var administrator = User.Register(email, name, passwordHash, administratorRoleId).Value;
         administrator.VerifyEmail();
-        administrator.AssignRole(administratorRoleId);
 
         context.Users.Add(administrator);
         await context.SaveChangesAsync(cancellationToken);
@@ -145,10 +144,9 @@ public sealed class DatabaseSeeder(
         }
 
         var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.DemoPassword)).Value;
-        var demo = User.Register(email, PersonName.Create("Demo", "Reader").Value, passwordHash).Value;
+        var demo = User.Register(email, PersonName.Create("Demo", "Reader").Value, passwordHash, memberRoleId).Value;
 
         demo.VerifyEmail();
-        demo.AssignRole(memberRoleId);
 
         context.Users.Add(demo);
         await context.SaveChangesAsync(cancellationToken);

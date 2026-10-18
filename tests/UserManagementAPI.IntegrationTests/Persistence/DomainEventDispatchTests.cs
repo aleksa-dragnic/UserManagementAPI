@@ -8,7 +8,13 @@ namespace UserManagementAPI.IntegrationTests.Persistence;
 [Collection(DatabaseCollection.Name)]
 public sealed class DomainEventDispatchTests(DatabaseFixture fixture) : IAsyncLifetime
 {
-    public Task InitializeAsync() => fixture.ResetAsync();
+    private Guid _memberRoleId;
+
+    public async Task InitializeAsync()
+    {
+        await fixture.ResetAsync();
+        _memberRoleId = await TestRoles.MemberIdAsync(fixture);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -50,10 +56,11 @@ public sealed class DomainEventDispatchTests(DatabaseFixture fixture) : IAsyncLi
         verifyContext.Users.Should().BeEmpty();
     }
 
-    private static User NewUser(string email) => User.Register(
+    private User NewUser(string email) => User.Register(
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
-        PasswordHash.Create("argon2id$hash").Value).Value;
+        PasswordHash.Create("argon2id$hash").Value,
+        _memberRoleId).Value;
 
     private sealed class RecordingPublisher : IDomainEventPublisher
     {

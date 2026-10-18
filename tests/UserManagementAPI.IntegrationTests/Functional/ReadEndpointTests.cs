@@ -35,7 +35,6 @@ public sealed class ReadEndpointTests(DatabaseFixture fixture) : IAsyncLifetime
     {
         var administrator = await _factory.CreateAdministratorClientAsync();
         var readerId = await administrator.RegisterUserAsync(ReaderEmail, ReaderPassword, "Ana", "Petrović");
-        await administrator.AssignRoleAsync(readerId, await fixture.RoleIdAsync(RoleNames.Member));
 
         var response = await administrator.GetAsync($"/api/v1/users/{readerId}");
 
@@ -70,8 +69,7 @@ public sealed class ReadEndpointTests(DatabaseFixture fixture) : IAsyncLifetime
     public async Task GetUsers_IsAllowedForAMember_AndListsEveryUserByEmail()
     {
         var administrator = await _factory.CreateAdministratorClientAsync();
-        var readerId = await administrator.RegisterUserAsync(ReaderEmail, ReaderPassword);
-        await administrator.AssignRoleAsync(readerId, await fixture.RoleIdAsync(RoleNames.Member));
+        await administrator.RegisterUserAsync(ReaderEmail, ReaderPassword);
         var reader = await _factory.CreateClientAsAsync(ReaderEmail, ReaderPassword);
 
         var response = await reader.GetAsync("/api/v1/users");

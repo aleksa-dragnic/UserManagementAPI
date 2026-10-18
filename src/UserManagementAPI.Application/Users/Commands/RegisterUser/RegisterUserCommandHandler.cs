@@ -1,16 +1,19 @@
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Common;
+using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 
 namespace UserManagementAPI.Application.Users.Commands.RegisterUser;
 
 /// <summary>
-/// Orchestration only: build the value objects, refuse a taken email, ask the
-/// aggregate to register, persist. Every rule about what a valid user is lives
-/// in the value objects and in User.Register.
+/// Orchestration only: build the value objects, refuse a taken email, look up
+/// the Member role every new user starts with, ask the aggregate to register,
+/// persist. Every rule about what a valid user is lives in the value objects
+/// and in User.Register.
 /// </summary>
 public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
+    IRoleRepository roleRepository,
     IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork) : ICommandHandler<RegisterUserCommand, Guid>
 {
@@ -42,7 +45,13 @@ public sealed class RegisterUserCommandHandler(
             return Result.Failure<Guid>(passwordHash.Error);
         }
 
-        var user = User.Register(email.Value, name.Value, passwordHash.Value);
+        // The seeder creates Member on every instance. Its absence is a broken
+        // deployment, not something the caller did, so it is not a domain error.
+        var member = await roleRepository.GetByNameAsync(RoleNames.Member, cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"The {RoleNames.Member} role does not exist; the database has not been seeded.");
+
+        var user = User.Register(email.Value, name.Value, passwordHash.Value, member.Id);
 
         if (user.IsFailure)
         {

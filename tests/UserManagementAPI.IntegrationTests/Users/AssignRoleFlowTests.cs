@@ -21,15 +21,18 @@ public sealed class AssignRoleFlowTests(DatabaseFixture fixture) : IAsyncLifetim
     [Fact]
     public async Task AssignRole_OnAReloadedUser_InsertsTheAssignment()
     {
-        var role = Role.Create("Member").Value;
+        var member = Role.Create(RoleNames.Member).Value;
+        var role = Role.Create(RoleNames.Administrator).Value;
         var user = User.Register(
             Email.Create("reloaded@example.com").Value,
             PersonName.Create("Ana", "Petrović").Value,
-            PasswordHash.Create("argon2id$hash").Value).Value;
+            PasswordHash.Create("argon2id$hash").Value,
+            member.Id).Value;
         user.VerifyEmail();
 
         await using (var seedContext = fixture.CreateContext())
         {
+            seedContext.Roles.Add(member);
             seedContext.Roles.Add(role);
             seedContext.Users.Add(user);
             await seedContext.SaveChangesAsync();
@@ -48,6 +51,7 @@ public sealed class AssignRoleFlowTests(DatabaseFixture fixture) : IAsyncLifetim
         await using var readContext = fixture.CreateContext();
         var reloaded = await new UserRepository(readContext).GetByIdAsync(user.Id);
 
-        reloaded!.Roles.Should().ContainSingle().Which.RoleId.Should().Be(role.Id);
+        reloaded!.Roles.Select(assigned => assigned.RoleId)
+            .Should().BeEquivalentTo([member.Id, role.Id]);
     }
 }

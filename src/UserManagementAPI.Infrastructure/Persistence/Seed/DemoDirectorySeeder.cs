@@ -80,10 +80,10 @@ public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirect
             var user = User.Register(
                 email,
                 PersonName.Create(first, last).Value,
-                PasswordHash.Create(UnusablePasswordHash).Value).Value;
+                PasswordHash.Create(UnusablePasswordHash).Value,
+                memberRoleId).Value;
 
             // Roles first: a deactivated user can no longer be assigned one.
-            Ensure(user.AssignRole(memberRoleId));
 
             if (index % 20 == 7)
             {

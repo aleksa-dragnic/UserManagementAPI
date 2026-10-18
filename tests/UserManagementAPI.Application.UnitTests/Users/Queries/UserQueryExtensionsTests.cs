@@ -96,5 +96,5 @@ public sealed class UserQueryExtensionsTests
     }
 
     private static User NewUser(string email, string first, string last) =>
-        User.Register(TestUsers.Email(email), TestUsers.Name(first, last), TestUsers.Hash()).Value;
+        User.Register(TestUsers.Email(email), TestUsers.Name(first, last), TestUsers.Hash(), TestUsers.MemberRoleId).Value;
 }

@@ -91,8 +91,8 @@ public static class ObservabilityExtensions
             Predicate = check => check.Tags.Contains("ready")
         });
 
-        // Kept as an alias of readiness: the compose healthcheck, the smoke
-        // scripts and Render's health path all point at it.
+        // Kept as an alias of readiness for clients that probe the conventional
+        // path. Render's health check uses /health/ready directly (render.yaml).
         app.MapHealthChecks("/health", new()
         {
             Predicate = check => check.Tags.Contains("ready")

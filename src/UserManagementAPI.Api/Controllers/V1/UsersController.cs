@@ -120,7 +120,7 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
         return Ok();
     }
 
-    /// <summary>Registers a user. The account starts Pending until its email is verified.</summary>
+    /// <summary>Registers a user. The account starts Pending; this API has no email verification endpoint, so only seeding moves it on.</summary>
     [HttpPost(Name = RouteNames.RegisterUser)]
     [HasPermission(PermissionCodes.UsersWrite)]
     [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]

@@ -105,9 +105,9 @@ while it wakes up. The database is Neon, also free tier.
 
 **HTTP surface**
 - RFC 9457 problem details with a stable `errorCode` on every failure the
-  application decides, the status following the error's type; every problem,
-  the framework's included, points at the same copy of RFC 9110. The ones
-  without `errorCode` are listed under Known limits
+  application decides, the status following the error's type; every problem
+  type, the framework's included, comes from one table: RFC 9110, and RFC 6585
+  for the 429. The ones without `errorCode` are listed under Known limits
 - Paging, filtering, whitelisted sorting and a search that ignores case and
   diacritics, with metadata in `X-Pagination`
 - Conditional GET: an ETag on every read and 304 on `If-None-Match`
@@ -120,7 +120,7 @@ while it wakes up. The database is Neon, also free tier.
 
 **Operations**
 - OpenTelemetry traces and metrics, exported in the compose stack; a
-  correlation id in every log line and response (a client's own is kept when
+  correlation id on every response and every log line of a request (a client's own is kept when
   it is at most 64 letters, digits, `-`, `_` or `.`); liveness and readiness split
 - Structured logging with Serilog, rendered as JSON in production so a log record cannot be forged from a request path
 - Multi-stage Docker build, compose stack with PostgreSQL and an OTLP collector
@@ -158,8 +158,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-367 test cases in 294 test methods: 97 in the domain, 94 in the application
-and 176 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+371 test cases in 295 test methods: 98 in the domain, 94 in the application
+and 179 integration tests (counted on 2026-10-18; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 
@@ -230,8 +230,10 @@ Written down so nobody has to discover them.
 - **Problem details come in two shapes.** Failures the application decides —
   validation, domain rules, conflicts, not found, the auth endpoints' own
   refusals — carry `errorCode` and `traceId`. A 401 for a missing or expired
-  token, a 403, a 406 and a 429 are written by the framework and carry no
-  `errorCode`; the 429 has no `traceId` either.
+  token, a 403, a 406, a 400 from model binding, a 500, and a 404, 405 or 415
+  for a route that does not exist are written by the framework and carry no
+  `errorCode`. The 429 comes from the rate limiter's own callback, with neither
+  `errorCode` nor `traceId`.
 - **ETags arrive weak only without compression.** The API computes strong
   tags. Render's edge in front of the deployed instance, which Render serves
   through Cloudflare, passes them through on a

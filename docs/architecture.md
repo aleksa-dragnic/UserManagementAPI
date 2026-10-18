@@ -43,7 +43,8 @@ and no repository on this path (ADR 0016).
 ForwardedHeaders          → the real scheme and caller address behind a proxy
 CorrelationId             → one id per request, in every log line and the response
 Serilog request logging
-IExceptionHandler chain   → domain → concurrency → global, all to problem details
+IExceptionHandler chain   → domain → concurrency → bad request → global, all to problem details
+Status code pages         → problem details for a 404, 405 or 415 with no body
 Security headers
 HSTS + HTTPS redirection  → production only
 Routing
@@ -124,5 +125,6 @@ detection possible; and `audit_log` carries a trigger that refuses `UPDATE` and
   a replayed token revokes every active token for that account (ADR 0009).
 - Authorization names a permission, never a role (ADR 0010). No bare
   `[Authorize]` exists in the project.
-- Every write is attributed to an actor in the append-only audit log; payloads
+- Every write to users and roles is recorded in the append-only audit log, with
+  its actor when there is one (a system write has none); payloads
   record which fields changed, never their values.

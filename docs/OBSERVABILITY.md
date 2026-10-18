@@ -9,7 +9,7 @@ instance.
 |---|---|---|
 | Traces | ASP.NET Core, HttpClient and Npgsql instrumentation | One span per request and one per SQL command. Requests to `/health`, `/scalar` and `/openapi` are not traced: the platform polls readiness every few seconds and those traces would drown the rest |
 | Metrics | ASP.NET Core, HttpClient, .NET runtime, and the `UserManagementAPI` meter | `umapi.auth.logins` (tags `outcome`, and `error_code` on a refusal) and `umapi.auth.refresh_reuse_detected` |
-| Logs | Serilog to the console | JSON in Production (ADR 0018); every line carries the correlation id and the trace and span ids |
+| Logs | Serilog to the console | JSON in Production (ADR 0018); every line written during a request carries the correlation id, and in Production the trace and span ids |
 
 Nothing is exported unless `OTEL_EXPORTER_OTLP_ENDPOINT` is set. Without it the
 signals are produced and discarded; the trace and span ids still reach the logs.

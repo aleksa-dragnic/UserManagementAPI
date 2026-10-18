@@ -1,5 +1,9 @@
 # 0004 — The domain model is the persistence model; no separate DB entities
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #7
+
 ## Context
 
 A common layout keeps rich domain classes and a parallel set of anaemic

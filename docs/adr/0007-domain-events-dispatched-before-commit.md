@@ -1,5 +1,9 @@
 # 0007 — Domain events dispatched before commit, inside the same transaction
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #8
+
 ## Context
 
 An aggregate raises a domain event when something happens that other parts of

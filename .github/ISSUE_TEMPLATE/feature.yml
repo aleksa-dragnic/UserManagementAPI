@@ -1,0 +1,23 @@
+name: Idea
+description: Something the API could do. The scope is closed on purpose; ideas are recorded with the future label.
+labels: [future]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The scope of this project is closed (docs/BUILD-PLAN.md section 13).
+        Ideas are recorded as issues labelled `future` so the decision is
+        visible, not planned. Multi-tenancy and OpenID Connect are already
+        declined in ADR 0015.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would matter
+    validations:
+      required: true

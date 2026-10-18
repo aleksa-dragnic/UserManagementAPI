@@ -1,5 +1,9 @@
 # 0013 — HATEOAS on request, through a vendor media type
 
+- **Status:** Accepted
+- **Date:** 2026-09-12
+- **PR:** #22
+
 ## Context
 
 Hypermedia is the constraint that makes an API RESTful in Fielding's sense:

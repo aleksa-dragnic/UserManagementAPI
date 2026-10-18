@@ -25,3 +25,4 @@ in the pull request that implements it.
 | [0018](0018-json-console-logs-in-production.md) | JSON console logs in production | post-1.0 |
 | [0019](0019-refresh-token-in-an-httponly-cookie.md) | The refresh token travels in an HttpOnly cookie | post-1.0 |
 | [0020](0020-accent-insensitive-search-through-unaccent.md) | Accent-insensitive search through unaccent | post-1.0 |
+| [0021](0021-optimistic-concurrency-on-users.md) | Optimistic concurrency on users, through a version and If-Match | M7 |

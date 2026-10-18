@@ -9,6 +9,9 @@ namespace UserManagementAPI.Infrastructure.Persistence.Configurations;
 
 internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
+    /// <summary>The shadow property that carries a user's version.</summary>
+    public const string UserVersion = "xmin";
+
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("users");
@@ -20,6 +23,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // tracks a child discovered through a navigation, with its key already
         // set, as Modified instead of Added - the UPDATE then affects zero rows.
         builder.Property(user => user.Id).ValueGeneratedNever();
+
+        // The version a client sends back in If-Match (ADR 0021): PostgreSQL's
+        // xmin, so no column is added. Every write to a user updates its row,
+        // and an update whose row changed since it was read fails instead of
+        // overwriting the newer state.
+        builder.Property<uint>(UserVersion).IsRowVersion();
 
         builder.OwnsOne(user => user.Email, email =>
         {

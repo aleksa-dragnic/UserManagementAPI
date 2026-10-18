@@ -7,4 +7,5 @@ public sealed record UpdateUserCommand(
     Guid UserId,
     string Email,
     string FirstName,
-    string LastName) : ICommand;
+    string LastName,
+    uint? ExpectedVersion = null) : ICommand;

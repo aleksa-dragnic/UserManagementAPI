@@ -15,4 +15,10 @@ public interface IUserRepository
     void Add(User user);
 
     void Update(User user);
+
+    /// <summary>
+    /// The version the user was read at. A write that names a different one is
+    /// refused (ADR 0021); the store refuses a write that races another.
+    /// </summary>
+    uint VersionOf(User user);
 }

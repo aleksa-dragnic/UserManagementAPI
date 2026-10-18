@@ -25,7 +25,7 @@ public static class CorsExtensions
         {
             policy
                 .WithOrigins(options.AllowedOrigins)
-                .WithHeaders("Authorization", "Content-Type", "Accept", "If-None-Match")
+                .WithHeaders("Authorization", "Content-Type", "Accept", "If-None-Match", "If-Match")
                 .WithMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS")
                 .WithExposedHeaders(
                     "X-Pagination",

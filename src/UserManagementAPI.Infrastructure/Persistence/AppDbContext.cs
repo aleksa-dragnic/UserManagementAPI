@@ -88,6 +88,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             return await base.SaveChangesAsync(cancellationToken);
         }
+        catch (DbUpdateConcurrencyException exception) when (exception.Entries.Any(entry => entry.Entity is User))
+        {
+            // A user changed between this request's read and its write: the
+            // same refusal as a stale If-Match, because it is the same mistake
+            // made a few milliseconds later (ADR 0021).
+            throw new DomainException(User.VersionMismatch, exception);
+        }
         catch (DbUpdateConcurrencyException exception)
         {
             throw new ConcurrencyConflictException(

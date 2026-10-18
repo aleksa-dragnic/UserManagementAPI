@@ -47,6 +47,10 @@ public sealed class User : AggregateRoot
         "User.InitialRoleRequired",
         "A user is registered with a role.");
 
+    public static readonly Error VersionMismatch = new(
+        "User.VersionMismatch",
+        "The user was changed after the version given in If-Match. Read it again and retry.");
+
     public static readonly Error RoleNotAssigned = new(
         "User.RoleNotAssigned",
         "The user does not hold this role.");

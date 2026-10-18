@@ -17,6 +17,11 @@ public sealed class UpdateUserCommandHandler(
             return Result.Failure(User.NotFound);
         }
 
+        if (!userRepository.IsCurrent(user, command.ExpectedVersion))
+        {
+            return Result.Failure(User.VersionMismatch);
+        }
+
         var email = Email.Create(command.Email);
 
         if (email.IsFailure)

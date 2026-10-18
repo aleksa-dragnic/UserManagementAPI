@@ -17,6 +17,11 @@ public sealed class UnlockUserCommandHandler(
             return Result.Failure(User.NotFound);
         }
 
+        if (!userRepository.IsCurrent(user, command.ExpectedVersion))
+        {
+            return Result.Failure(User.VersionMismatch);
+        }
+
         var unlocked = user.Unlock();
 
         if (unlocked.IsFailure)

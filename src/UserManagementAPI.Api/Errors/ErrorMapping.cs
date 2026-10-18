@@ -39,6 +39,11 @@ internal static class ErrorMapping
             return StatusCodes.Status404NotFound;
         }
 
+        if (error.Code.EndsWith(".VersionMismatch", StringComparison.Ordinal))
+        {
+            return StatusCodes.Status412PreconditionFailed;
+        }
+
         if (error.Code.EndsWith("NotUnique", StringComparison.Ordinal) ||
             error.Code.Contains("Already", StringComparison.Ordinal))
         {
@@ -80,6 +85,7 @@ internal static class ErrorMapping
         StatusCodes.Status401Unauthorized => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.2",
         StatusCodes.Status404NotFound => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5",
         StatusCodes.Status409Conflict => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.10",
+        StatusCodes.Status412PreconditionFailed => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.13",
         StatusCodes.Status422UnprocessableEntity => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.21",
         _ => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.1"
     };
@@ -89,6 +95,7 @@ internal static class ErrorMapping
         StatusCodes.Status401Unauthorized => "Unauthorized",
         StatusCodes.Status404NotFound => "Not Found",
         StatusCodes.Status409Conflict => "Conflict",
+        StatusCodes.Status412PreconditionFailed => "Precondition Failed",
         StatusCodes.Status422UnprocessableEntity => "Unprocessable Content",
         _ => "Bad Request"
     };

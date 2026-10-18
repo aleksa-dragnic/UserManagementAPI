@@ -52,3 +52,11 @@ services:
         sync: false
       - key: Seed__DemoPassword
         sync: false
+      # Telemetry export (docs/OBSERVABILITY.md). Unset, traces and metrics are
+      # produced and discarded; set, they go to the OTLP endpoint named here.
+      - key: OTEL_EXPORTER_OTLP_ENDPOINT
+        sync: false
+      - key: OTEL_EXPORTER_OTLP_HEADERS
+        sync: false
+      - key: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: http/protobuf

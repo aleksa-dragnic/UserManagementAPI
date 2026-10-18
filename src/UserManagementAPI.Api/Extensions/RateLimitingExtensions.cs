@@ -5,6 +5,8 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
+using UserManagementAPI.Api.Errors;
+
 namespace UserManagementAPI.Api.Extensions;
 
 /// <summary>
@@ -54,7 +56,7 @@ public static class RateLimitingExtensions
 
                 var problem = new ProblemDetails
                 {
-                    Type = "https://datatracker.ietf.org/doc/html/rfc6585#section-4",
+                    Type = ProblemTypes.For(StatusCodes.Status429TooManyRequests),
                     Title = "Too Many Requests",
                     Status = StatusCodes.Status429TooManyRequests,
                     Detail = "The request was rate limited. Retry after the interval in the Retry-After header.",

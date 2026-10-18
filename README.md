@@ -99,13 +99,15 @@ while it wakes up. The database is Neon, also free tier.
   role name in code, no bare `[Authorize]` anywhere
 - Append-only audit log, enforced by a database trigger, recording which fields
   changed and never their values
-- Per-endpoint rate limiting, security headers with HSTS, explicit CORS with
+- Per-endpoint rate limiting, security headers with HSTS (CSP, no framing,
+  no referrer, Permissions-Policy, COOP and CORP), explicit CORS with
   credentials for named origins only, request size cap
 
 **HTTP surface**
 - RFC 9457 problem details with a stable `errorCode` on every failure the
-  application decides; the ones the framework writes are listed under
-  Known limits
+  application decides, the status following the error's type; every problem,
+  the framework's included, points at the same copy of RFC 9110. The ones
+  without `errorCode` are listed under Known limits
 - Paging, filtering, whitelisted sorting and a search that ignores case and
   diacritics, with metadata in `X-Pagination`
 - Conditional GET: an ETag on every read and 304 on `If-None-Match`
@@ -118,7 +120,8 @@ while it wakes up. The database is Neon, also free tier.
 
 **Operations**
 - OpenTelemetry traces and metrics, exported in the compose stack; a
-  correlation id in every log line and response; liveness and readiness split
+  correlation id in every log line and response (a client's own is kept when
+  it is at most 64 letters, digits, `-`, `_` or `.`); liveness and readiness split
 - Structured logging with Serilog, rendered as JSON in production so a log record cannot be forged from a request path
 - Multi-stage Docker build, compose stack with PostgreSQL and an OTLP collector
 - GitHub Actions: build with warnings as errors, tests against a real
@@ -155,8 +158,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-322 test cases in 290 test methods: 97 in the domain, 94 in the application
-and 131 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+367 test cases in 294 test methods: 97 in the domain, 94 in the application
+and 176 integration tests (counted on 2026-10-18; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 

@@ -7,7 +7,7 @@ namespace UserManagementAPI.Api.Extensions;
 
 /// <summary>
 /// Converts a failed Result into an IActionResult carrying problem details with
-/// the status the error's code family maps to. A controller action calls this
+/// the status the error's type maps to. A controller action calls this
 /// on the failure path and nothing else — it never inspects an error code.
 /// </summary>
 public static class ResultExtensions

@@ -3,8 +3,9 @@ namespace UserManagementAPI.Api.Middleware;
 /// <summary>
 /// The headers a JSON API should always send. A REST API is not rendered in a
 /// browser, but a browser can still be made to fetch one, so the cheap defences
-/// go on every response: no MIME sniffing, no framing, no referrer leakage, and
-/// a content security policy that permits nothing at all.
+/// go on every response: no MIME sniffing, no framing, no referrer leakage, a
+/// content security policy that permits nothing at all, no browser features,
+/// and no sharing of the browsing context or the response with another site.
 ///
 /// The API documentation is the exception: Scalar is a real page that loads its
 /// own script and styles, and "default-src 'none'" would leave it blank. Those
@@ -21,6 +22,10 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
         "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; " +
         "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'";
 
+    private const string NoFeatures =
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), " +
+        "microphone=(), payment=(), usb=()";
+
     public Task InvokeAsync(HttpContext context)
     {
         var headers = context.Response.Headers;
@@ -28,6 +33,11 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
         headers["X-Content-Type-Options"] = "nosniff";
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
+        headers["Permissions-Policy"] = NoFeatures;
+        headers["Cross-Origin-Opener-Policy"] = "same-origin";
+        // Applies to no-cors loads (an <img>, a <script>) from another site.
+        // The console's fetches are CORS requests, which this does not block.
+        headers["Cross-Origin-Resource-Policy"] = "same-site";
         headers["Content-Security-Policy"] = IsDocumentation(context.Request.Path)
             ? DocumentationPolicy
             : ApiPolicy;

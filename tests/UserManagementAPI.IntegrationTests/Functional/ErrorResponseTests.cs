@@ -79,6 +79,23 @@ public sealed class ErrorResponseTests(DatabaseFixture fixture) : IAsyncLifetime
     /// malformed request and MVC answers 400 with problem details. 422 is kept
     /// for a well-formed body whose values are wrong — the test above.
     /// </summary>
+    [Theory]
+    [InlineData("/api/v1/users", false)]
+    [InlineData("/api/v1/no-such-resource", true)]
+    [InlineData("/api/v1/users/00000000-0000-0000-0000-000000000001", true)]
+    public async Task EveryProblem_PointsAtTheSameCopyOfTheRfc(string path, bool authenticated)
+    {
+        // A 401 from the bearer challenge and a 404 for an unknown route are
+        // written by the framework; a 404 for an unknown user by the application.
+        var client = authenticated ? _administrator : _factory.CreateClient();
+
+        var response = await client.GetAsync(path);
+
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        problem.RootElement.GetProperty("type").GetString()
+            .Should().StartWith("https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.");
+    }
+
     [Fact]
     public async Task AMalformedBody_Is400_WithProblemDetails_NotA500()
     {

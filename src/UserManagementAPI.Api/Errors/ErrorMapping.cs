@@ -9,49 +9,29 @@ namespace UserManagementAPI.Api.Errors;
 
 /// <summary>
 /// Turns a domain or application Error into RFC 9457 problem details. The
-/// status is chosen by error-code family, not by listing every code:
+/// status follows the error's type, never its code:
 ///
-///   Validation.*                     422 Unprocessable Content
-///   Auth.*                           401 Unauthorized
-///   *.NotFound                       404 Not Found
-///   *NotUnique, *.Already*           409 Conflict
-///   everything else                  400 Bad Request
+///   Validation                       422 Unprocessable Content
+///   Unauthorized                     401 Unauthorized
+///   NotFound                         404 Not Found
+///   Conflict                         409 Conflict
+///   PreconditionFailed               412 Precondition Failed
+///   Failure                          400 Bad Request
 ///
 /// The code itself travels in the "errorCode" extension so a client can branch
 /// on something stable while the human-readable title and detail may change.
 /// </summary>
 internal static class ErrorMapping
 {
-    public static int StatusCodeFor(Error error)
+    public static int StatusCodeFor(Error error) => error.Type switch
     {
-        if (error is ValidationError)
-        {
-            return StatusCodes.Status422UnprocessableEntity;
-        }
-
-        if (error.Code.StartsWith("Auth.", StringComparison.Ordinal))
-        {
-            return StatusCodes.Status401Unauthorized;
-        }
-
-        if (error.Code.EndsWith(".NotFound", StringComparison.Ordinal))
-        {
-            return StatusCodes.Status404NotFound;
-        }
-
-        if (error.Code.EndsWith(".VersionMismatch", StringComparison.Ordinal))
-        {
-            return StatusCodes.Status412PreconditionFailed;
-        }
-
-        if (error.Code.EndsWith("NotUnique", StringComparison.Ordinal) ||
-            error.Code.Contains("Already", StringComparison.Ordinal))
-        {
-            return StatusCodes.Status409Conflict;
-        }
-
-        return StatusCodes.Status400BadRequest;
-    }
+        ErrorType.Validation => StatusCodes.Status422UnprocessableEntity,
+        ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+        ErrorType.NotFound => StatusCodes.Status404NotFound,
+        ErrorType.Conflict => StatusCodes.Status409Conflict,
+        ErrorType.PreconditionFailed => StatusCodes.Status412PreconditionFailed,
+        _ => StatusCodes.Status400BadRequest
+    };
 
     public static ProblemDetails ToProblemDetails(Error error, HttpContext httpContext)
     {
@@ -59,7 +39,7 @@ internal static class ErrorMapping
 
         var problem = new ProblemDetails
         {
-            Type = TypeFor(status),
+            Type = ProblemTypes.For(status),
             Title = TitleFor(status),
             Status = status,
             Detail = error.Description,
@@ -79,16 +59,6 @@ internal static class ErrorMapping
 
         return problem;
     }
-
-    private static string TypeFor(int status) => status switch
-    {
-        StatusCodes.Status401Unauthorized => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.2",
-        StatusCodes.Status404NotFound => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5",
-        StatusCodes.Status409Conflict => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.10",
-        StatusCodes.Status412PreconditionFailed => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.13",
-        StatusCodes.Status422UnprocessableEntity => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.21",
-        _ => "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.1"
-    };
 
     private static string TitleFor(int status) => status switch
     {

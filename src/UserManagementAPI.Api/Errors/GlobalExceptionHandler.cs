@@ -30,7 +30,7 @@ internal sealed class GlobalExceptionHandler(
             Exception = exception,
             ProblemDetails = new ProblemDetails
             {
-                Type = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.1",
+                Type = ProblemTypes.For(StatusCodes.Status500InternalServerError),
                 Title = "An unexpected error occurred.",
                 Status = StatusCodes.Status500InternalServerError
             }

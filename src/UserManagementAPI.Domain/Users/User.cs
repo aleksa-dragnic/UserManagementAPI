@@ -11,13 +11,14 @@ public sealed class User : AggregateRoot
 {
     public static readonly Error AlreadyVerified = new(
         "User.AlreadyVerified",
-        "Only a pending user can have their email verified.");
+        "Only a pending user can have their email verified.",
+        ErrorType.Conflict);
 
     public static readonly Error Deactivated = new(
         "User.Deactivated",
         "A deactivated user cannot be modified.");
 
-    public static readonly Error AlreadyLocked = new("User.AlreadyLocked", "The user is already locked.");
+    public static readonly Error AlreadyLocked = new("User.AlreadyLocked", "The user is already locked.", ErrorType.Conflict);
 
     public static readonly Error CannotLockSelf = new(
         "User.CannotLockSelf",
@@ -27,17 +28,20 @@ public sealed class User : AggregateRoot
 
     public static readonly Error AlreadyDeactivated = new(
         "User.AlreadyDeactivated",
-        "The user is already deactivated.");
+        "The user is already deactivated.",
+        ErrorType.Conflict);
 
-    public static readonly Error NotFound = new("User.NotFound", "The user was not found.");
+    public static readonly Error NotFound = new("User.NotFound", "The user was not found.", ErrorType.NotFound);
 
     public static readonly Error EmailNotUnique = new(
         "User.EmailNotUnique",
-        "A user with this email already exists.");
+        "A user with this email already exists.",
+        ErrorType.Conflict);
 
     public static readonly Error RoleAlreadyAssigned = new(
         "User.RoleAlreadyAssigned",
-        "The user already holds this role.");
+        "The user already holds this role.",
+        ErrorType.Conflict);
 
     public static readonly Error LastRoleCannotBeRemoved = new(
         "User.LastRoleCannotBeRemoved",
@@ -49,21 +53,24 @@ public sealed class User : AggregateRoot
 
     public static readonly Error VersionMismatch = new(
         "User.VersionMismatch",
-        "The user was changed after the version given in If-Match. Read it again and retry.");
+        "The user was changed after the version given in If-Match. Read it again and retry.",
+        ErrorType.PreconditionFailed);
 
     public static readonly Error RoleNotAssigned = new(
         "User.RoleNotAssigned",
         "The user does not hold this role.");
 
-    // Code family "Auth." maps to 401. These are the two reasons a user who
+    // Unauthorized, so 401, and named "Auth." like the others. These are the two reasons a user who
     // proved their password is still refused; the aggregate owns that rule.
     public static readonly Error AccountLocked = new(
         "Auth.AccountLocked",
-        "The account is locked.");
+        "The account is locked.",
+        ErrorType.Unauthorized);
 
     public static readonly Error AccountDeactivated = new(
         "Auth.AccountDeactivated",
-        "The account has been deactivated.");
+        "The account has been deactivated.",
+        ErrorType.Unauthorized);
 
     private readonly List<UserRole> _roles = [];
 

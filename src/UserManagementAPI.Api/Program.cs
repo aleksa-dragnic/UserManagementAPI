@@ -91,6 +91,13 @@ builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
     {
+        // The framework's own problems (status code pages, model binding) carry
+        // a type URI of their own choosing; every problem uses the same one.
+        if (ProblemTypes.For(context.ProblemDetails.Status ?? context.HttpContext.Response.StatusCode) is { } type)
+        {
+            context.ProblemDetails.Type = type;
+        }
+
         context.ProblemDetails.Instance =
             $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
 

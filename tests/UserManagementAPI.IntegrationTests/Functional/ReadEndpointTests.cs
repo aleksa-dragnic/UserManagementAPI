@@ -80,13 +80,26 @@ public sealed class ReadEndpointTests(DatabaseFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetUsers_IsForbidden_ForAUserWithoutARole()
+    public async Task GetUsers_IsForbidden_ForAUserWhoseRolesLackThePermission()
     {
-        var administrator = await _factory.CreateAdministratorClientAsync();
-        await administrator.RegisterUserAsync(ReaderEmail, ReaderPassword);
-        var roleless = await _factory.CreateClientAsAsync(ReaderEmail, ReaderPassword);
+        // A user always holds a role, and both seeded roles grant users.read,
+        // so the test makes a role that grants nothing.
+        var guest = Role.Create("Guest").Value;
+        await using (var context = fixture.CreateContext())
+        {
+            context.Roles.Add(guest);
+            await context.SaveChangesAsync();
+        }
 
-        var response = await roleless.GetAsync("/api/v1/users");
+        var administrator = await _factory.CreateAdministratorClientAsync();
+        var readerId = await administrator.RegisterUserAsync(ReaderEmail, ReaderPassword);
+        await administrator.AssignRoleAsync(readerId, guest.Id);
+        var memberId = await fixture.RoleIdAsync(RoleNames.Member);
+        (await administrator.DeleteAsync($"/api/v1/users/{readerId}/roles/{memberId}"))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var withoutPermission = await _factory.CreateClientAsAsync(ReaderEmail, ReaderPassword);
+
+        var response = await withoutPermission.GetAsync("/api/v1/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

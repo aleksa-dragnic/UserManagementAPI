@@ -1,5 +1,9 @@
 # 0002 — PostgreSQL on Neon, branch per environment
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #7
+
 ## Context
 
 The API needs a PostgreSQL instance that is reachable from a developer machine,

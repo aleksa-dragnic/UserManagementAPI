@@ -1,5 +1,9 @@
 # 0016 — Query handlers live in Infrastructure
 
+- **Status:** Accepted
+- **Date:** 2026-09-12
+- **PR:** #18
+
 ## Context
 
 The read side is meant to skip the domain entirely (ADR 0003, M5): a query

@@ -1,5 +1,9 @@
 # 0017 — No data shaping on collection endpoints
 
+- **Status:** Accepted
+- **Date:** 2026-09-12
+- **PR:** #19
+
 ## Context
 
 Data shaping lets a client choose the fields of a response —

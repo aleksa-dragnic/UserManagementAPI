@@ -1,5 +1,9 @@
 # 0003 — CQRS with a hand-written dispatcher instead of a mediator library
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #10
+
 ## Context
 
 Commands and queries are separate request types with separate handlers, and a

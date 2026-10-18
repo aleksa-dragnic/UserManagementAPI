@@ -1,5 +1,9 @@
 # 0011 — HTTP contracts kept separate from application commands
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #12
+
 ## Context
 
 A controller receives a request body and a handler needs a command. The two are

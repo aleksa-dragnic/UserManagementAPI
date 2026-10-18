@@ -1,5 +1,10 @@
 # 0009 — Short-lived JWTs with rotating refresh tokens and reuse detection
 
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- **PR:** #15
+- **Amended by:** [0019](0019-refresh-token-in-an-httponly-cookie.md) — the refresh token moved from the body into an HttpOnly cookie
+
 ## Context
 
 A bearer token is a credential anyone holding it can use. The longer it lives,

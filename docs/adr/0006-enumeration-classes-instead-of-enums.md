@@ -1,5 +1,9 @@
 # 0006 — Enumeration classes instead of C# enums for domain states
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #4
+
 ## Context
 
 Domain states such as user status need a closed set of named values. A C# `enum`

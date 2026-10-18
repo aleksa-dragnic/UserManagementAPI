@@ -1,5 +1,9 @@
 # 0005 — Value objects mapped as EF Core owned types
 
+- **Status:** Accepted
+- **Date:** 2026-09-09
+- **PR:** #7
+
 ## Context
 
 `Email`, `PersonName` and `PasswordHash` are value objects: they have no

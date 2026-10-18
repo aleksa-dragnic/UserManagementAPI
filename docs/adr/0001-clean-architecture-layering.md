@@ -1,5 +1,9 @@
 # 0001 — Four projects, with dependencies pointing inward
 
+- **Status:** Accepted
+- **Date:** 2026-09-12 (recorded in M6; the decision is older, as the record explains)
+- **PR:** #26
+
 ## Context
 
 Every non-trivial service has the same four concerns: the rules of the

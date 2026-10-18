@@ -155,7 +155,7 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-318 test cases in 286 test methods: 97 in the domain, 93 in the application
+319 test cases in 287 test methods: 97 in the domain, 94 in the application
 and 128 integration tests (counted on 2026-10-18; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
@@ -179,6 +179,8 @@ running; no connection string is needed.
   audit log, migrations and Neon
 - [`docs/TESTING.md`](docs/TESTING.md) — what each test level covers and how to
   run it
+- [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) — what is traced and
+  measured, and how to send it to Grafana Cloud
 - [`SECURITY.md`](SECURITY.md) — how to report a vulnerability
 
 ## Configuration
@@ -204,6 +206,7 @@ a deployed instance they are environment variables.
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
 | `Outbox:*` | Batch size, polling interval, attempts and backoff of the outbox processor |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
+| `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_PROTOCOL` | The collector's credentials and protocol, for example Grafana Cloud's `Authorization` header and `http/protobuf` |
 
 ## Known limits
 
@@ -241,11 +244,12 @@ Written down so nobody has to discover them.
   `traceId`, `errors`), the four user states, and the 413 and 429 refusals.
   The hypermedia envelope is described in ADR 0013 rather than per operation,
   and some 400 and 409 answers a domain rule can produce are not listed.
-- **The deployed instance exports no telemetry.** Traces and metrics are
-  exported in the compose stack (Grafana on port 3000). In production
-  `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, so they are produced and discarded;
-  trace and span ids survive in the JSON logs. Issue #54 records what exporting
-  would take.
+- **Telemetry leaves a deployed instance only once it is pointed somewhere.**
+  Traces and metrics are exported in the compose stack (Grafana on port 3000).
+  A deployed instance exports them when `OTEL_EXPORTER_OTLP_ENDPOINT` is set on
+  it, as [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) describes for Grafana
+  Cloud; until then they are produced and discarded, and the trace and span ids
+  survive in the JSON logs.
 - **The audit log is append-only against the application, not the owner.**
   A database trigger refuses `UPDATE` and `DELETE` on `audit_log`; `TRUNCATE`
   is deliberately left alone, and whoever owns the database can drop the

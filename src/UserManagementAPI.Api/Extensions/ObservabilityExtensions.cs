@@ -7,6 +7,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 using UserManagementAPI.Api.Middleware;
+using UserManagementAPI.Application.Auth;
 using UserManagementAPI.Infrastructure.Persistence;
 
 namespace UserManagementAPI.Api.Extensions;
@@ -57,7 +58,8 @@ public static class ObservabilityExtensions
                 metrics
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(AuthMetrics.MeterName);
 
                 if (!string.IsNullOrWhiteSpace(otlpEndpoint))
                 {

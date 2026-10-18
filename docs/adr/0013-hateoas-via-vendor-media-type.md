@@ -62,3 +62,13 @@ OpenAPI document falls short: it also leaves `errorCode`, `traceId` and
 `errors` out of `ProblemDetails`, describes user `status` as an open string,
 omits several statuses and declares no security scheme. The README lists them
 under Known limits.
+
+*Clarified 2026-10-18 (`v2.1.0`).* Most of the 2026-10-03 clarification no
+longer holds: transformers in `src/UserManagementAPI.Api/OpenApi/` add
+`errorCode`, `traceId` and `errors` to `ProblemDetails`, describe user `status`
+as an enum, declare the bearer scheme, and add the 429 and 413 responses
+(`OpenApiDocumentTests`). The envelope is still described here rather than in
+the document. And two statements of the decision were wider than the code:
+`HEAD` and the `ValidateMediaType` filter are on the v1 user reads only, not on
+the roles or on v2.
+

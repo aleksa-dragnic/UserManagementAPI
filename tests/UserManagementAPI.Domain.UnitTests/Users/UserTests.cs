@@ -109,6 +109,20 @@ public class UserTests
     }
 
     [Fact]
+    public void ChangeName_ReplacesTheName_AndStampsUpdatedAt()
+    {
+        var user = TestUsers.Active();
+        var updatedBefore = user.UpdatedAtUtc;
+        var newName = TestUsers.Name("Marko", "Jovanović");
+
+        var result = user.ChangeName(newName);
+
+        result.IsSuccess.Should().BeTrue();
+        user.Name.Should().Be(newName);
+        user.UpdatedAtUtc.Should().BeOnOrAfter(updatedBefore);
+    }
+
+    [Fact]
     public void ChangeName_ToTheCurrentName_ChangesNothing()
     {
         var user = TestUsers.Active();

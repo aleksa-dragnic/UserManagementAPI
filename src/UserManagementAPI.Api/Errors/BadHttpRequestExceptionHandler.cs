@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
+using UserManagementAPI.Domain.Common;
+
 namespace UserManagementAPI.Api.Errors;
 
 /// <summary>
@@ -17,6 +19,16 @@ internal sealed class BadHttpRequestExceptionHandler(
     IProblemDetailsService problemDetailsService,
     ILogger<BadHttpRequestExceptionHandler> logger) : IExceptionHandler
 {
+    public static readonly Error ContentTooLargeError = new(
+        "Request.ContentTooLarge",
+        "The request body exceeds the size this endpoint accepts.",
+        ErrorType.Failure);
+
+    public static readonly Error MalformedError = new(
+        "Request.Malformed",
+        "The request could not be read.",
+        ErrorType.Failure);
+
     private const int ContentTooLarge = 413;
 
     public async ValueTask<bool> TryHandleAsync(
@@ -59,8 +71,8 @@ internal sealed class BadHttpRequestExceptionHandler(
         };
 
         problem.Extensions["errorCode"] = status == ContentTooLarge
-            ? "Request.ContentTooLarge"
-            : "Request.Malformed";
+            ? ContentTooLargeError.Code
+            : MalformedError.Code;
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {

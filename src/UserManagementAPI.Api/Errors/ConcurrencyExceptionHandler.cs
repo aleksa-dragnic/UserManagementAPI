@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 
 using UserManagementAPI.Application.Abstractions;
 
+using UserManagementAPI.Domain.Common;
+
 namespace UserManagementAPI.Api.Errors;
 
 /// <summary>
@@ -12,6 +14,11 @@ namespace UserManagementAPI.Api.Errors;
 /// </summary>
 internal sealed class ConcurrencyExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
+    public static readonly Error Conflict = new(
+        "Concurrency.Conflict",
+        "The record was modified by another request. Read it again and retry.",
+        ErrorType.Conflict);
+
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -33,7 +40,7 @@ internal sealed class ConcurrencyExceptionHandler(IProblemDetailsService problem
             Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}"
         };
 
-        problem.Extensions["errorCode"] = "Concurrency.Conflict";
+        problem.Extensions["errorCode"] = Conflict.Code;
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {

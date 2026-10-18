@@ -39,13 +39,13 @@ internal sealed class ProblemDetailsSchemaTransformer : IOpenApiSchemaTransforme
         schema.Properties["traceId"] = new OpenApiSchema
         {
             Type = JsonSchemaType.String | JsonSchemaType.Null,
-            Description = "The W3C trace id of the request, as it appears in the logs."
+            Description = "The W3C traceparent id of the request; its trace id part is the one in the logs."
         };
 
         schema.Properties["errors"] = new OpenApiSchema
         {
             Type = JsonSchemaType.Object | JsonSchemaType.Null,
-            Description = "On a 422: the messages for each field that failed validation.",
+            Description = "On a 422, and on a 400 from model binding: the messages for each field that failed.",
             AdditionalProperties = new OpenApiSchema
             {
                 Type = JsonSchemaType.Array,

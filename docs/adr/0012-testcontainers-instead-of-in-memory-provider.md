@@ -35,7 +35,7 @@ round-trips through an int column, and a throwing event handler rolls back the
 write — none of which the in-memory provider could have caught.
 
 The costs are real but small. Docker must be running locally; the first run
-pulls the image and is slow once. CI needs Docker, which `ubuntu-latest`
+pulls the image and is slow once. CI needs Docker, which the Ubuntu runner
 provides by default, and needs no database secret at all, because the container
 supplies its own.
 

@@ -1,13 +1,13 @@
 # Testing
 
-367 test cases in 294 test methods, counted on 2026-10-18 from the CI run on
+371 test cases in 295 test methods, counted on 2026-10-18 from the CI run on
 `main`. A `[Theory]` with several `[InlineData]` rows counts once per row.
 
 | Project | Methods | Cases | What it covers |
 |---|---|---|---|
-| `UserManagementAPI.Domain.UnitTests` | 85 | 97 | Every aggregate method on its allowed and its refused path, every value object, the seedwork |
+| `UserManagementAPI.Domain.UnitTests` | 86 | 98 | Every aggregate method on its allowed and its refused path, every value object, the seedwork |
 | `UserManagementAPI.Application.UnitTests` | 83 | 94 | Handlers with faked repositories, the pipeline behaviors, validators, query composition, and the layer rules read from the compiled assemblies |
-| `UserManagementAPI.IntegrationTests` | 126 | 176 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
+| `UserManagementAPI.IntegrationTests` | 126 | 179 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
 
 ## Running them
 
@@ -48,4 +48,6 @@ three projects on every pull request and every push to `main`.
   `WebApplicationFactory`, including authentication, authorization, rate
   limits, conditional GET, versioning and hypermedia.
 - **Architecture** tests (`LayeringTests`, `ApiLayeringTests`) fail the build
-  when a project reaches through a layer (ADR 0001).
+  when a project references a layer it may not, or a controller depends on
+  Infrastructure (ADR 0001). That only `Program.cs` and `Extensions/` touch
+  Infrastructure is a review rule.

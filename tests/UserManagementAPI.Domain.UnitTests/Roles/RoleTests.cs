@@ -103,9 +103,19 @@ public class RoleTests
             .Where(type => typeof(Entity).IsAssignableFrom(type) && !type.IsAbstract)
             .ToList();
 
+        // A property typed as an aggregate, or as a collection of one.
+        static bool HoldsAnAggregate(Type type) =>
+            typeof(AggregateRoot).IsAssignableFrom(type) ||
+            (type != typeof(string) &&
+             type.GetInterfaces()
+                 .Append(type)
+                 .Where(candidate => candidate.IsGenericType &&
+                                     candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                 .Any(enumerable => typeof(AggregateRoot).IsAssignableFrom(enumerable.GetGenericArguments()[0])));
+
         var offenders = aggregateTypes
             .SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            .Where(property => typeof(AggregateRoot).IsAssignableFrom(property.PropertyType))
+            .Where(property => HoldsAnAggregate(property.PropertyType))
             .Select(property => $"{property.DeclaringType!.Name}.{property.Name}")
             .ToList();
 

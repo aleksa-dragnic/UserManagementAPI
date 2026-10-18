@@ -76,7 +76,8 @@ two name fields, and neither the query, the read model nor the aggregate moved.
 ```
 users              id uuid PK, email citext UNIQUE, password_hash text,
                    name_first varchar(100), name_last varchar(100), status_id int,
-                   created_at_utc timestamptz, updated_at_utc timestamptz
+                   created_at_utc timestamptz, updated_at_utc timestamptz,
+                   xmin (concurrency, ADR 0021)
 roles              id uuid PK, name varchar(100) UNIQUE
 permissions        id uuid PK, code varchar(100) UNIQUE
 user_roles         id uuid PK, user_id FK, role_id FK, assigned_at_utc, UNIQUE (user_id, role_id)

@@ -18,9 +18,9 @@ public static partial class UserRequestMapper
 {
     public static partial RegisterUserCommand ToCommand(this RegisterUserRequest request);
 
-    public static partial UpdateUserCommand ToCommand(this UpdateUserRequest request, Guid userId);
+    public static partial UpdateUserCommand ToCommand(this UpdateUserRequest request, Guid userId, uint? expectedVersion);
 
-    public static partial AssignRoleCommand ToCommand(this AssignRoleRequest request, Guid userId);
+    public static partial AssignRoleCommand ToCommand(this AssignRoleRequest request, Guid userId, uint? expectedVersion);
 
     public static partial GetUsersQuery ToQuery(this UserQueryParameters parameters);
 }

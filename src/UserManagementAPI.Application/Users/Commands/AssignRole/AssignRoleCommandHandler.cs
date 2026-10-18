@@ -23,6 +23,11 @@ public sealed class AssignRoleCommandHandler(
             return Result.Failure(User.NotFound);
         }
 
+        if (!userRepository.IsCurrent(user, command.ExpectedVersion))
+        {
+            return Result.Failure(User.VersionMismatch);
+        }
+
         if (!await roleRepository.ExistsAsync(command.RoleId, cancellationToken))
         {
             return Result.Failure(Role.NotFound);

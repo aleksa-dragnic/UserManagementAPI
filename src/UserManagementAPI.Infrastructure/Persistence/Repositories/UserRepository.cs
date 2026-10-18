@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using UserManagementAPI.Domain.Users;
+using UserManagementAPI.Infrastructure.Persistence.Configurations;
 
 namespace UserManagementAPI.Infrastructure.Persistence.Repositories;
 
@@ -26,6 +27,9 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
         context.Users.AnyAsync(user => user.Email.Value == email.Value, cancellationToken);
 
     public void Add(User user) => context.Users.Add(user);
+
+    public uint VersionOf(User user) =>
+        context.Entry(user).Property<uint>(UserConfiguration.UserVersion).OriginalValue;
 
     /// <summary>
     /// Aggregates arrive here tracked by the context that loaded them, so the

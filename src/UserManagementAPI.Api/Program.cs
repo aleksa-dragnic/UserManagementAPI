@@ -114,15 +114,29 @@ builder.Services.AddApiCors(builder.Configuration);
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = MaxRequestBodyBytes);
 
 // Behind Render's proxy the scheme and the caller's address arrive in headers.
-// Without this the rate limiter partitions every request by the proxy's address
-// and HTTPS redirection sees http.
+// Without them the rate limiter partitions every request by the proxy's address
+// and HTTPS redirection sees http. The headers are only as trustworthy as
+// whoever set them: Render does not publish its proxies' addresses, so on
+// Render (which always sets RENDER=true) every hop is trusted, and anywhere else
+// only loopback is unless ForwardedHeaders:TrustAllProxies says otherwise. A
+// caller reaching the application directly cannot choose its own rate-limit
+// partition by sending X-Forwarded-For.
+var trustAllProxies =
+    builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies") ||
+    builder.Configuration.GetValue<bool>("RENDER");
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // KnownIPNetworks, not KnownNetworks: the latter is obsolete in .NET 10
-    // (ASPDEPR005) and obsolete is an error here.
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    options.ForwardLimit = 1;
+
+    if (trustAllProxies)
+    {
+        // KnownIPNetworks, not KnownNetworks: the latter is obsolete in .NET 10
+        // (ASPDEPR005) and obsolete is an error here.
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
 });
 
 builder.Services.AddObservability(builder.Configuration);

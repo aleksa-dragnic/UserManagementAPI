@@ -612,3 +612,4 @@ that made the change.
 | §4.4 | Squash-merge every pull request | Pull requests up to #42 were merged with merge commits; every pull request merged from #45 on was squashed. The repository's ruleset still allows all three merge methods |
 | §7, §13 | About seven to eight weeks at a steady cadence | Built in a week: the first commit is dated 2026-09-07 and `v1.0.0` 2026-09-12, with 42 commits on 2026-09-12 alone. The history is left as it happened |
 | §9 | Test baseline | 294 test cases in 267 methods on 2026-10-18: 95 domain, 89 application, 110 integration |
+| §7 M1 | A user always keeps at least one role | Held only on removal until `v2.1.0`: registration created a user with no role, which the `.http` walk-through ran into. `User.Register` now takes the initial role and the handler gives every new user Member |

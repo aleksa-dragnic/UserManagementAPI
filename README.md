@@ -79,7 +79,8 @@ while it wakes up. The database is Neon, also free tier.
 **Domain modelling**
 - Aggregates that own their invariants: no public setter, every state change
   through a method, every transition tested on both the allowed and the
-  refused path
+  refused path; a user holds a role from registration, Member by default,
+  and cannot lose the last one
 - Value objects (`Email`, `PersonName`, `PasswordHash`) validated in their
   factories and mapped as EF Core owned types
 - Enumeration classes instead of C# enums, so a state can carry behaviour

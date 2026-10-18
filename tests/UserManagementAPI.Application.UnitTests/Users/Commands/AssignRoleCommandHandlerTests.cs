@@ -24,7 +24,7 @@ public sealed class AssignRoleCommandHandlerTests
         var result = await Handler().HandleAsync(new AssignRoleCommand(user.Id, roleId));
 
         result.IsSuccess.Should().BeTrue();
-        user.Roles.Should().ContainSingle().Which.RoleId.Should().Be(roleId);
+        user.Roles.Select(role => role.RoleId).Should().BeEquivalentTo([TestUsers.MemberRoleId, roleId]);
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -38,7 +38,7 @@ public sealed class AssignRoleCommandHandlerTests
         var result = await Handler().HandleAsync(new AssignRoleCommand(user.Id, Guid.NewGuid()));
 
         result.Error.Should().Be(Role.NotFound);
-        user.Roles.Should().BeEmpty();
+        user.Roles.Should().ContainSingle().Which.RoleId.Should().Be(TestUsers.MemberRoleId);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using UserManagementAPI.Application.Users.Commands.RegisterUser;
+using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.IntegrationTests.Identity;
 using UserManagementAPI.Infrastructure.Persistence.Repositories;
@@ -13,7 +14,13 @@ namespace UserManagementAPI.IntegrationTests.Users;
 [Collection(DatabaseCollection.Name)]
 public sealed class RegisterUserFlowTests(DatabaseFixture fixture) : IAsyncLifetime
 {
-    public Task InitializeAsync() => fixture.ResetAsync();
+    private Guid _memberRoleId;
+
+    public async Task InitializeAsync()
+    {
+        await fixture.ResetAsync();
+        _memberRoleId = await TestRoles.MemberIdAsync(fixture);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -26,7 +33,8 @@ public sealed class RegisterUserFlowTests(DatabaseFixture fixture) : IAsyncLifet
 
         await using (var context = fixture.CreateContext())
         {
-            var handler = new RegisterUserCommandHandler(new UserRepository(context), hasher, context);
+            var handler = new RegisterUserCommandHandler(
+                new UserRepository(context), new RoleRepository(context), hasher, context);
 
             var result = await handler.HandleAsync(
                 new RegisterUserCommand("Ana.Petrovic@Example.com", "Ana", "Petrović", password));
@@ -42,6 +50,7 @@ public sealed class RegisterUserFlowTests(DatabaseFixture fixture) : IAsyncLifet
         reloaded!.Email.Value.Should().Be("ana.petrovic@example.com");
         reloaded.Name.FullName.Should().Be("Ana Petrović");
         reloaded.Status.Should().Be(UserStatus.Pending);
+        reloaded.Roles.Should().ContainSingle().Which.RoleId.Should().Be(_memberRoleId);
         reloaded.PasswordHash.Value.Should().NotContain(password);
         hasher.Verify(password, reloaded.PasswordHash.Value).Should().BeTrue();
         hasher.Verify("wrong password", reloaded.PasswordHash.Value).Should().BeFalse();

@@ -20,11 +20,15 @@ internal static class TestUsers
     public static PasswordHash Hash(string value = "pbkdf2-sha256$1$c2FsdA==$aGFzaA==") =>
         PasswordHash.Create(value).Value;
 
-    public static User Pending() => User.Register(Email(), Name(), Hash()).Value;
+    /// <summary>The role every test user starts with unless a test names another.</summary>
+    public static readonly Guid MemberRoleId = Guid.NewGuid();
 
-    public static User Active()
+    public static User Pending(Guid? initialRoleId = null) =>
+        User.Register(Email(), Name(), Hash(), initialRoleId ?? MemberRoleId).Value;
+
+    public static User Active(Guid? initialRoleId = null)
     {
-        var user = Pending();
+        var user = Pending(initialRoleId);
         user.VerifyEmail();
         return user;
     }
@@ -43,11 +47,12 @@ internal static class TestUsers
         return user;
     }
 
-    public static User ActiveWithRoles(params Guid[] roleIds)
+    /// <summary>An active user holding exactly these roles, the first given at registration.</summary>
+    public static User ActiveWithRoles(Guid firstRoleId, params Guid[] otherRoleIds)
     {
-        var user = Active();
+        var user = Active(firstRoleId);
 
-        foreach (var roleId in roleIds)
+        foreach (var roleId in otherRoleIds)
         {
             user.AssignRole(roleId);
         }

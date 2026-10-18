@@ -26,7 +26,7 @@ Content-Type: application/json
 @accessToken = {{login.response.body.accessToken}}
 
 ### List users: page two, ten at a time, newest first.
-GET {{host}}/api/v1/users?pageNumber=1&pageSize=10&orderBy=createdAt desc
+GET {{host}}/api/v1/users?pageNumber=2&pageSize=10&orderBy=createdAt desc
 Accept: application/json
 Authorization: Bearer {{accessToken}}
 
@@ -40,7 +40,8 @@ GET {{host}}/api/v1/users
 Accept: application/vnd.umapi.hateoas+json
 Authorization: Bearer {{accessToken}}
 
-### Register a user. The location of the new user comes back in the header.
+### Register a user. The location of the new user comes back in the header,
+### and the user starts with the Member role.
 # @name register
 POST {{host}}/api/v1/users
 Content-Type: application/json
@@ -82,25 +83,25 @@ Authorization: Bearer {{accessToken}}
   "lastName": "Nikolić"
 }
 
-### The roles a user can be given.
+### The roles a user can be given, ordered by name: Administrator, Member.
 # @name roles
 GET {{host}}/api/v1/roles
 Accept: application/json
 Authorization: Bearer {{accessToken}}
 
-@memberRoleId = {{roles.response.body.$[1].id}}
+@administratorRoleId = {{roles.response.body.$[0].id}}
 
-### Assign a role.
+### Assign a second role.
 POST {{host}}/api/v1/users/{{userId}}/roles
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 {
-  "roleId": "{{memberRoleId}}"
+  "roleId": "{{administratorRoleId}}"
 }
 
-### Remove it again.
-DELETE {{host}}/api/v1/users/{{userId}}/roles/{{memberRoleId}}
+### Remove it again. Removing the user's last role would be refused with 400.
+DELETE {{host}}/api/v1/users/{{userId}}/roles/{{administratorRoleId}}
 Authorization: Bearer {{accessToken}}
 
 ### Lock the account. A locked user cannot log in.

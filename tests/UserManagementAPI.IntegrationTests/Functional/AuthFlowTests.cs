@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 using UserManagementAPI.Api.Contracts.V1;
-using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.IntegrationTests.Functional;
 
@@ -145,10 +144,8 @@ public sealed class AuthFlowTests(DatabaseFixture fixture) : IAsyncLifetime
 
     private async Task<Guid> RegisterMemberAsync()
     {
-        var userId = await _administrator.RegisterUserAsync(Email, Password);
-        await _administrator.AssignRoleAsync(userId, await fixture.RoleIdAsync(RoleNames.Member));
-
-        return userId;
+        // Registration gives the new user the Member role.
+        return await _administrator.RegisterUserAsync(Email, Password);
     }
 
     /// <summary>Logs the member in and returns the refresh token its cookie carries.</summary>

@@ -9,7 +9,13 @@ namespace UserManagementAPI.IntegrationTests.Persistence;
 [Collection(DatabaseCollection.Name)]
 public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetime
 {
-    public Task InitializeAsync() => fixture.ResetAsync();
+    private Guid _memberRoleId;
+
+    public async Task InitializeAsync()
+    {
+        await fixture.ResetAsync();
+        _memberRoleId = await TestRoles.MemberIdAsync(fixture);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -101,7 +107,7 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
     public async Task RoleAssignments_RoundTripWithTheAggregate()
     {
         // The role must exist: user_roles.role_id is a foreign key to roles.
-        var role = Role.Create("Member").Value;
+        var role = Role.Create(RoleNames.Administrator).Value;
         var user = NewUser("with.roles@example.com");
         user.VerifyEmail();
         user.AssignRole(role.Id);
@@ -116,11 +122,13 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
         await using var readContext = fixture.CreateContext();
         var reloaded = await new UserRepository(readContext).GetByIdAsync(user.Id);
 
-        reloaded!.Roles.Should().ContainSingle().Which.RoleId.Should().Be(role.Id);
+        reloaded!.Roles.Select(assigned => assigned.RoleId)
+            .Should().BeEquivalentTo([_memberRoleId, role.Id]);
     }
 
-    private static User NewUser(string email) => User.Register(
+    private User NewUser(string email) => User.Register(
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
-        PasswordHash.Create("argon2id$hash").Value).Value;
+        PasswordHash.Create("argon2id$hash").Value,
+        _memberRoleId).Value;
 }

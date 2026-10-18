@@ -26,7 +26,8 @@ public sealed class JwtTokenServiceTests
         var user = User.Register(
             Email.Create("ana.petrovic@example.com").Value,
             PersonName.Create("Ana", "Petrović").Value,
-            PasswordHash.Create("$argon2id$v=19$m=1,t=1,p=1$c2FsdA==$aGFzaA==").Value).Value;
+            PasswordHash.Create("$argon2id$v=19$m=1,t=1,p=1$c2FsdA==$aGFzaA==").Value,
+            Guid.NewGuid()).Value;
         var service = new JwtTokenService(Options.Create(TestOptions));
 
         var issued = service.CreateAccessToken(user, ["users.read", "users.write"]);

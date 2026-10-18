@@ -51,6 +51,30 @@ jobs:
           --collect:"XPlat Code Coverage"
           --results-directory ./artifacts/test-results
 
+      # Migrations are applied by hand to a deployed database (docs/DATABASE.md).
+      # An idempotent script per build makes that step reviewable: it can be
+      # read, and run, without the SDK. The design-time factory needs a
+      # connection string to build options; nothing connects.
+      - name: Script the migrations
+        env:
+          ConnectionStrings__Migrations: Host=localhost;Database=unused
+        run: >
+          dotnet tool restore &&
+          dotnet dotnet-ef migrations script
+          --idempotent
+          --no-build
+          --configuration Release
+          --project src/UserManagementAPI.Infrastructure
+          --startup-project src/UserManagementAPI.Api
+          --output ./artifacts/migrations.sql
+
+      - name: Upload the migration script
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: migrations
+          path: ./artifacts/migrations.sql
+          retention-days: 30
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

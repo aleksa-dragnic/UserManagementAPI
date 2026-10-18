@@ -20,6 +20,10 @@ public sealed class ErrorMappingTests
     {
         ["General.NullValue"] = 400,
         ["Request.InvalidIfMatch"] = 400,
+        // Answered 413 by its handler, which sets the status itself; its type is Failure.
+        ["Request.ContentTooLarge"] = 400,
+        ["Request.Malformed"] = 400,
+        ["Concurrency.Conflict"] = 409,
         [ValidationError.GeneralCode] = 422,
 
         ["Auth.InvalidCredentials"] = 401,

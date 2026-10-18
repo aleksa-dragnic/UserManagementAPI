@@ -152,8 +152,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-301 test cases in 274 test methods: 97 in the domain, 91 in the application
-and 113 integration tests (counted on 2026-10-18; `[Theory]` rows count once
+309 test cases in 279 test methods: 97 in the domain, 91 in the application
+and 121 integration tests (counted on 2026-10-18; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 
@@ -234,11 +234,11 @@ Written down so nobody has to discover them.
   finds Ana Petrović, but `djordjevic` does not find Đorđević: `đ` folds to `d`,
   not to `dj` ([ADR 0020](docs/adr/0020-accent-insensitive-search-through-unaccent.md)).
   No index is used; at this size a scan is the right plan.
-- **The OpenAPI document under-describes the instance.** `ProblemDetails`
-  lacks `errorCode`, `traceId` and `errors`; the hypermedia envelope is
-  described in ADR 0013 rather than per operation; user `status` is an open
-  string; 413, 429 and some 400 and 409 answers are not listed; there is no
-  security scheme, so Scalar's auth box is filled by hand.
+- **The OpenAPI document describes the common shapes, not every answer.** It
+  declares the bearer scheme, the problem details extensions (`errorCode`,
+  `traceId`, `errors`), the four user states, and the 413 and 429 refusals.
+  The hypermedia envelope is described in ADR 0013 rather than per operation,
+  and some 400 and 409 answers a domain rule can produce are not listed.
 - **The deployed instance exports no telemetry.** Traces and metrics are
   exported in the compose stack (Grafana on port 3000). In production
   `OTEL_EXPORTER_OTLP_ENDPOINT` is unset, so they are produced and discarded;

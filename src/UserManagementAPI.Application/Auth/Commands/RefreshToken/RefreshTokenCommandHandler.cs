@@ -31,6 +31,7 @@ public sealed class RefreshTokenCommandHandler(
         if (presented.IsRotated)
         {
             await refreshTokenRepository.RevokeAllActiveForUserAsync(presented.UserId, cancellationToken);
+            AuthMetrics.RefreshReuseDetected();
 
             return Result.Failure<AuthTokens>(AuthErrors.RefreshTokenReused);
         }

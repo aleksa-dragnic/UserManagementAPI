@@ -36,6 +36,7 @@ public sealed class LoginCommandHandler(
 
         if (user is null || !passwordMatches)
         {
+            AuthMetrics.LoginRefused(AuthErrors.InvalidCredentials.Code);
             return Result.Failure<AuthTokens>(AuthErrors.InvalidCredentials);
         }
 
@@ -43,6 +44,7 @@ public sealed class LoginCommandHandler(
 
         if (canLogIn.IsFailure)
         {
+            AuthMetrics.LoginRefused(canLogIn.Error.Code);
             return Result.Failure<AuthTokens>(canLogIn.Error);
         }
 
@@ -54,6 +56,7 @@ public sealed class LoginCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        AuthMetrics.LoginSucceeded();
 
         return tokens;
     }

@@ -35,7 +35,8 @@ Out of scope:
 - The published demo account. Its password is in the README on purpose, and it
   can only read.
 - Requests for paths that do not exist (`/.env`, `phpinfo.php` and similar).
-  Automated scanners send them all day and the API answers 404.
+  Automated scanners send them all day and the API answers 404. They are not
+  rate limited by the API; at this size that is left to the platform's edge.
 - Findings that need a compromised machine, browser or Render account.
 
 ## What is already in place

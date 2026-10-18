@@ -205,6 +205,7 @@ a deployed instance they are environment variables.
 | `Cors:AllowCredentials` | Lets a browser client on a named origin send the refresh cookie; on in `appsettings.Development.json` and on the demo instance |
 | `RateLimiting:*` | Permit limits and windows for the auth, read and write policies |
 | `Outbox:*` | Batch size, polling interval, attempts and backoff of the outbox processor |
+| `ForwardedHeaders:TrustAllProxies` | Trust `X-Forwarded-For` and `X-Forwarded-Proto` from any proxy. Off by default, so only loopback is trusted; treated as on when Render's `RENDER=true` is present |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Set it and traces and metrics are exported; leave it unset and nothing is |
 | `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_PROTOCOL` | The collector's credentials and protocol, for example Grafana Cloud's `Authorization` header and `http/protobuf` |
 
@@ -254,6 +255,10 @@ Written down so nobody has to discover them.
   A database trigger refuses `UPDATE` and `DELETE` on `audit_log`; `TRUNCATE`
   is deliberately left alone, and whoever owns the database can drop the
   trigger.
+- **The demo instance trusts its edge for the caller's address.** Render does
+  not publish its proxies' addresses, so on Render every forwarding hop is
+  trusted and the auth rate limit's per-address budget relies on the edge
+  setting `X-Forwarded-For`. Elsewhere only loopback is trusted.
 - **HSTS is ASP.NET Core's default**: thirty days, no `includeSubDomains`, no
   preload. It covers the API's own host and nothing beside it.
 

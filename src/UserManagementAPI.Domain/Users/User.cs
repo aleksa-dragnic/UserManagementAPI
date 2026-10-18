@@ -43,6 +43,10 @@ public sealed class User : AggregateRoot
         "User.LastRoleCannotBeRemoved",
         "A user must retain at least one role.");
 
+    public static readonly Error InitialRoleRequired = new(
+        "User.InitialRoleRequired",
+        "A user is registered with a role.");
+
     public static readonly Error RoleNotAssigned = new(
         "User.RoleNotAssigned",
         "The user does not hold this role.");
@@ -89,9 +93,20 @@ public sealed class User : AggregateRoot
 
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
 
-    public static Result<User> Register(Email email, PersonName name, PasswordHash passwordHash)
+    /// <summary>
+    /// Registers a user holding <paramref name="initialRoleId"/>. A user has a
+    /// role from the moment it exists, so the invariant RemoveRole defends holds
+    /// from registration on; which role a new user gets is the caller's policy.
+    /// </summary>
+    public static Result<User> Register(Email email, PersonName name, PasswordHash passwordHash, Guid initialRoleId)
     {
+        if (initialRoleId == Guid.Empty)
+        {
+            return Result.Failure<User>(InitialRoleRequired);
+        }
+
         var user = new User(Guid.NewGuid(), email, name, passwordHash);
+        user._roles.Add(new UserRole(user.Id, initialRoleId));
 
         user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id));
 

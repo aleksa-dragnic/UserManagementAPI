@@ -16,7 +16,13 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
 {
     private const string Hash = "$argon2id$v=19$m=8192,t=1,p=1$c2FsdHNhbHRzYWx0c2FsdA==$aGFzaGhhc2hoYXNoaGFzaGhhc2hoYXNoaGFzaGhhc2g=";
 
-    public Task InitializeAsync() => fixture.ResetAsync();
+    private Guid _memberRoleId;
+
+    public async Task InitializeAsync()
+    {
+        await fixture.ResetAsync();
+        _memberRoleId = await TestRoles.MemberIdAsync(fixture);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -141,7 +147,7 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
         }
     }
 
-    private static async Task<User> RegisterAsync(ServiceProvider provider, string email)
+    private async Task<User> RegisterAsync(ServiceProvider provider, string email)
     {
         await using var scope = provider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -149,7 +155,8 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
         var user = User.Register(
             Email.Create(email).Value,
             PersonName.Create("Ana", "Petrović").Value,
-            PasswordHash.Create(Hash).Value).Value;
+            PasswordHash.Create(Hash).Value,
+            _memberRoleId).Value;
 
         context.Users.Add(user);
         await context.SaveChangesAsync();

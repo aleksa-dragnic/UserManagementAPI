@@ -17,7 +17,13 @@ namespace UserManagementAPI.IntegrationTests.Outbox;
 [Collection(DatabaseCollection.Name)]
 public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
 {
-    public Task InitializeAsync() => fixture.ResetAsync();
+    private Guid _memberRoleId;
+
+    public async Task InitializeAsync()
+    {
+        await fixture.ResetAsync();
+        _memberRoleId = await TestRoles.MemberIdAsync(fixture);
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -111,7 +117,7 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         message.NextAttemptOnUtc.Should().NotBeNull();
     }
 
-    private static async Task RegisterAsync(ServiceProvider provider, string email)
+    private async Task RegisterAsync(ServiceProvider provider, string email)
     {
         await using var scope = provider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -125,10 +131,11 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         return await scope.ServiceProvider.GetRequiredService<OutboxBatchProcessor>().ProcessBatchAsync();
     }
 
-    private static User NewUser(string email) => User.Register(
+    private User NewUser(string email) => User.Register(
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
-        PasswordHash.Create("pbkdf2-sha256$1$c2FsdA==$aGFzaA==").Value).Value;
+        PasswordHash.Create("pbkdf2-sha256$1$c2FsdA==$aGFzaA==").Value,
+        _memberRoleId).Value;
 
     private sealed class RecordingPublisher : IOutboxPublisher
     {

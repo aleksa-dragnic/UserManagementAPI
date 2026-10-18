@@ -3,16 +3,14 @@ using System.Net.Http.Json;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 using UserManagementAPI.Api.Contracts.V1;
-using UserManagementAPI.Domain.Roles;
 
 namespace UserManagementAPI.IntegrationTests.Functional;
 
 /// <summary>
-/// Real HTTP through the whole stack. The administrator registers a user and
-/// gives them Member; the Member then tries to write.
+/// Real HTTP through the whole stack. The administrator registers a user, who
+/// starts as a Member; the Member then tries to write.
 /// </summary>
 [Collection(DatabaseCollection.Name)]
 public sealed class PermissionGateTests(DatabaseFixture fixture) : IAsyncLifetime
@@ -79,8 +77,8 @@ public sealed class PermissionGateTests(DatabaseFixture fixture) : IAsyncLifetim
         unlock.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    /// <summary>Registers a user and grants Member through the API, as the administrator.</summary>
-    private async Task<Guid> RegisterMemberAsync(HttpClient administrator)
+    /// <summary>Registers a user through the API, as the administrator; registration makes them a Member.</summary>
+    private static async Task<Guid> RegisterMemberAsync(HttpClient administrator)
     {
         var registered = await administrator.PostAsJsonAsync(
             "/api/v1/users",
@@ -89,20 +87,6 @@ public sealed class PermissionGateTests(DatabaseFixture fixture) : IAsyncLifetim
 
         var created = await registered.Content.ReadFromJsonAsync<UserCreatedResponse>();
 
-        Guid memberRoleId;
-        await using (var context = fixture.CreateContext())
-        {
-            memberRoleId = await context.Roles
-                .Where(role => role.Name == RoleNames.Member)
-                .Select(role => role.Id)
-                .SingleAsync();
-        }
-
-        var assigned = await administrator.PostAsJsonAsync(
-            $"/api/v1/users/{created!.Id}/roles",
-            new AssignRoleRequest(memberRoleId));
-        assigned.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        return created.Id;
+        return created!.Id;
     }
 }

@@ -9,13 +9,31 @@ public class UserTests
     [Fact]
     public void Register_ProducesAPendingUser()
     {
-        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash());
+        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), TestUsers.MemberRoleId);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Status.Should().Be(UserStatus.Pending);
         result.Value.Id.Should().NotBe(Guid.Empty);
         result.Value.CreatedAtUtc.Should().Be(result.Value.UpdatedAtUtc);
-        result.Value.Roles.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Register_StartsTheUserWithTheGivenRole()
+    {
+        var roleId = Guid.NewGuid();
+
+        var user = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), roleId).Value;
+
+        user.Roles.Should().ContainSingle()
+            .Which.Should().Match<UserRole>(role => role.UserId == user.Id && role.RoleId == roleId);
+    }
+
+    [Fact]
+    public void Register_Fails_WithoutARole()
+    {
+        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), Guid.Empty);
+
+        result.Error.Should().Be(User.InitialRoleRequired);
     }
 
     [Fact]
@@ -203,16 +221,15 @@ public class UserTests
         var result = user.AssignRole(roleId);
 
         result.IsSuccess.Should().BeTrue();
-        user.Roles.Should().ContainSingle()
-            .Which.Should().Match<UserRole>(role => role.UserId == user.Id && role.RoleId == roleId);
+        user.Roles.Should().HaveCount(2).And
+            .Contain(role => role.UserId == user.Id && role.RoleId == roleId);
     }
 
     [Fact]
     public void AssignRole_Fails_WhenTheSameRoleIsAssignedTwice()
     {
-        var user = TestUsers.Active();
         var roleId = Guid.NewGuid();
-        user.AssignRole(roleId);
+        var user = TestUsers.Active(roleId);
 
         var result = user.AssignRole(roleId);
 
@@ -229,9 +246,8 @@ public class UserTests
     [Fact]
     public void RemoveRole_DropsTheAssignment_WhenAnotherRoleRemains()
     {
-        var user = TestUsers.Active();
         var first = Guid.NewGuid();
-        user.AssignRole(first);
+        var user = TestUsers.Active(first);
         user.AssignRole(Guid.NewGuid());
 
         var result = user.RemoveRole(first);
@@ -243,9 +259,8 @@ public class UserTests
     [Fact]
     public void RemoveRole_Fails_WhenItIsTheLastRemainingRole()
     {
-        var user = TestUsers.Active();
         var roleId = Guid.NewGuid();
-        user.AssignRole(roleId);
+        var user = TestUsers.Active(roleId);
 
         var result = user.RemoveRole(roleId);
 

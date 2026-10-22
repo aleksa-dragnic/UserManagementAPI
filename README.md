@@ -17,9 +17,8 @@ supposed to. Its admin console,
 the live instance at **https://console.aleksadragnic.com**.
 
 It is a personal project built to a production standard. It is not running a
-business and has no users but its author. It is built with the help of an AI
-coding agent (Claude Code), under the rules in [`AGENTS.md`](AGENTS.md); every
-change goes through a pull request and CI like any other.
+business and has no users but its author. Every change goes through a pull
+request and CI.
 
 ## Quick start
 

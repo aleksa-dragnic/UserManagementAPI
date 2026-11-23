@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-09-11
 - **PR:** #13
+- **Amended by:** #120 — the poll claims its batch with `FOR UPDATE SKIP LOCKED`, so more than one replica is safe
 
 ## Context
 
@@ -52,6 +53,13 @@ The processor runs in a single instance. With several replicas the poll would
 need `FOR UPDATE SKIP LOCKED` so two workers never take the same row. That is
 not needed for one container on Fly.io or Render, and is recorded as the first
 thing to add if a second one ever appears.
+
+**Amended (#120).** The poll now claims its batch with `FOR UPDATE SKIP
+LOCKED`, in a transaction that lasts until the outcome is saved: a second
+processor skips the rows the first holds and takes the next ones. The lock is
+held while the batch publishes, so a slow publisher holds its rows that long;
+the batch size bounds it. A retry of the transaction by the execution strategy
+can publish a message twice, which at-least-once delivery already allows.
 
 `outbox_messages` and its processor are infrastructure. The domain raises the
 same events it always did and knows nothing about the table.

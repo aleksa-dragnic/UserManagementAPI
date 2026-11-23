@@ -25,23 +25,35 @@ updates:
     # pull requests edited the same two lines of Directory.Packages.props and
     # the second one conflicted. The broad group excludes what the narrow ones
     # already claim.
+    #
+    # Every group takes minor and patch updates only. A major version is a
+    # decision rather than an update, so it arrives in a pull request of its
+    # own (Scalar 3 and Serilog 11 did, and both needed reading before they
+    # could be taken). "libraries" names the packages no other group claims:
+    # without it Scalar alone opened a pull request per patch release, and
+    # each was superseded by the next before anyone merged it.
     groups:
       testing:
+        update-types: [minor, patch]
         patterns:
           - "xunit*"
           - "NSubstitute"
           - "Testcontainers*"
           - "coverlet.collector"
+          - "FluentAssertions"
           - "Microsoft.NET.Test.Sdk"
           - "Microsoft.AspNetCore.Mvc.Testing"
       opentelemetry:
+        update-types: [minor, patch]
         patterns:
           - "OpenTelemetry*"
           - "Npgsql.OpenTelemetry"
       versioning:
+        update-types: [minor, patch]
         patterns:
           - "Asp.Versioning*"
       framework:
+        update-types: [minor, patch]
         patterns:
           - "Microsoft.*"
           - "System.*"
@@ -51,6 +63,14 @@ updates:
           - "Microsoft.NET.Test.Sdk"
           - "Microsoft.AspNetCore.Mvc.Testing"
           - "Npgsql.OpenTelemetry"
+      libraries:
+        update-types: [minor, patch]
+        patterns:
+          - "Scalar.*"
+          - "Serilog*"
+          - "FluentValidation*"
+          - "Riok.Mapperly"
+          - "Konscious.*"
 
     # FluentAssertions 8 moved from Apache 2.0 to the Xceed Community License:
     # free for non-commercial use, paid for commercial use. Version 7 stays
@@ -70,3 +90,17 @@ updates:
       day: monday
     commit-message:
       prefix: ci
+    # CodeQL's init and analyze actions are one release and must move
+    # together, majors included: as two pull requests each ran a different
+    # version and "Analyze C#" failed on both (#98/#99, #103/#104). Every other
+    # action is grouped for minor and patch; a major comes on its own.
+    groups:
+      codeql:
+        patterns:
+          - "github/codeql-action*"
+      actions:
+        update-types: [minor, patch]
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "github/codeql-action*"

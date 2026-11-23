@@ -18,7 +18,8 @@ the live instance at **https://console.aleksadragnic.com**.
 
 It is a personal project built to a production standard. It is not running a
 business and has no users but its author. Every change goes through a pull
-request and CI.
+request and CI, including the ones drafted with a coding agent
+([How this was built](#how-this-was-built)).
 
 ## Quick start
 
@@ -173,7 +174,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — twenty-one architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty-two architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone
@@ -183,7 +184,21 @@ running; no connection string is needed.
   run it
 - [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) — what is traced and
   measured, and how to send it to Grafana Cloud
+- [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) — how changes are made with a
+  coding agent, and how they are checked
+- [`AGENTS.md`](AGENTS.md) — the rules the agent works to
 - [`SECURITY.md`](SECURITY.md) — how to report a vulnerability
+
+## How this was built
+
+With the help of an AI coding agent, Claude Code, under a written process
+([ADR 0022](docs/adr/0022-working-with-a-coding-agent.md)). Every change starts
+as an issue and a plan, the agent drafts it on a branch, and I review it before
+CI and the merge. Architecture decisions, anything security-sensitive, merges
+and releases stay with me. Commits the agent co-wrote carry a `Co-Authored-By`
+line, and every pull request says how it was made and what I verified myself.
+[`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) describes the flow and what is
+delegated; [`AGENTS.md`](AGENTS.md) holds the agent's rules.
 
 ## Configuration
 

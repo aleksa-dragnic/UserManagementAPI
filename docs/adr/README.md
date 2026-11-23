@@ -26,3 +26,4 @@ in the pull request that implements it.
 | [0019](0019-refresh-token-in-an-httponly-cookie.md) | The refresh token travels in an HttpOnly cookie | post-1.0 |
 | [0020](0020-accent-insensitive-search-through-unaccent.md) | Accent-insensitive search through unaccent | post-1.0 |
 | [0021](0021-optimistic-concurrency-on-users.md) | Optimistic concurrency on users, through a version and If-Match | M7 |
+| [0022](0022-working-with-a-coding-agent.md) | Working with a coding agent: the agent drafts, the maintainer decides and merges | post-2.1 |

@@ -1,0 +1,62 @@
+name: Load test
+
+# By hand only: two minutes of load against the compose stack on the runner,
+# never against the free-tier demo (loadtests/README.md, #116). A missed
+# threshold fails the run; the k6 summary is kept as an artifact either way.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_PROJECT_NAME: umapi-loadtest
+  COMPOSE_FILES: -f docker-compose.yml -f loadtests/compose.loadtest.yml
+
+jobs:
+  k6:
+    name: k6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Start the stack
+        run: docker compose $COMPOSE_FILES up -d --build --wait db api
+
+      # The API has no container healthcheck, so --wait does not wait for it.
+      - name: Wait for the API
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8080/health/ready > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "::error::The API did not become ready."
+          exit 1
+
+      - name: Seed the directory
+        run: docker compose $COMPOSE_FILES exec -T api dotnet UserManagementAPI.Api.dll seed-demo-directory
+
+      # k6 runs as its own image, pinned by digest, inside the compose network.
+      - name: Run k6
+        run: |
+          mkdir -p loadtests/results
+          docker run --rm --network umapi-loadtest_default \
+            -e BASE_URL=http://api:8080 -e RESULTS_DIR=/scripts/results \
+            -v "$PWD/loadtests:/scripts" \
+            grafana/k6:2.4.0@sha256:d41bb79cd8de5a7ad619b53570e3712633e8bff0937010a5c6c57a4747e7a276 \
+            run /scripts/users.js
+
+      - name: Upload the k6 summary
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: k6-summary
+          path: loadtests/results/
+          retention-days: 30
+
+      - name: API logs of a failed run
+        if: failure()
+        run: docker compose $COMPOSE_FILES logs api --tail 200

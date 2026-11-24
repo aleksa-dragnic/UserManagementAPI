@@ -1,0 +1,23 @@
+# Layered over docker-compose.yml for a load test only (loadtests/README.md):
+#   docker compose -f docker-compose.yml -f loadtests/compose.loadtest.yml up -d --build --wait db api
+#
+# The per-user rate limits (100 reads and 30 writes a minute) would answer most
+# of a load test with 429, which measures the limiter, not the service. They are
+# lifted here and nowhere else. The auth limit stays: the test signs in once.
+services:
+  api:
+    environment:
+      RateLimiting__Read__PermitLimit: "1000000"
+      RateLimiting__Write__PermitLimit: "1000000"
+      # Exporting telemetry to a collector that is not started would only add
+      # failed exports to every request.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+  # A database of its own: a load test registers hundreds of users, which do
+  # not belong in the development database docker-compose.yml keeps.
+  db:
+    volumes: !override
+      - loadtest-db-data:/var/lib/postgresql/data
+
+volumes:
+  loadtest-db-data:

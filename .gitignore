@@ -491,3 +491,6 @@ apply-*.ps1
 check-repo*.ps1
 check-repo*.txt
 tree.txt
+
+# k6 output of a local load test run (loadtests/README.md)
+loadtests/results/

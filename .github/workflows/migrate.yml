@@ -60,6 +60,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Restore
+        run: dotnet restore UserManagementAPI.sln
+
       # The design-time factory needs a connection string to build its options;
       # `script` connects to nothing.
       - name: Script the migrations

@@ -48,7 +48,7 @@ public sealed class RefreshRotationTests(DatabaseFixture fixture) : IAsyncLifeti
         await using var context = fixture.CreateContext();
         context.RefreshTokens.Should().HaveCount(3);
         context.RefreshTokens.Should().OnlyContain(token => token.RevokedAtUtc != null || token.ReplacedById != null);
-        context.RefreshTokens.Should().OnlyContain(token => !token.IsActive);
+        context.RefreshTokens.Should().OnlyContain(token => !token.IsActiveAt(DateTime.UtcNow));
     }
 
     [Fact]

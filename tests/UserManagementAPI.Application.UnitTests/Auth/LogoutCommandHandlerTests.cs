@@ -10,12 +10,14 @@ public sealed class LogoutCommandHandlerTests
     private readonly ITokenService _tokenService = Substitute.For<ITokenService>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private LogoutCommandHandler Handler() => new(_refreshTokens, _tokenService, _unitOfWork);
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
+    private LogoutCommandHandler Handler() => new(_refreshTokens, _tokenService, _unitOfWork, _clock);
 
     [Fact]
     public async Task RevokesThePresentedToken_AndSaves()
     {
-        var token = RefreshToken.Issue(Guid.NewGuid(), "hash", DateTime.UtcNow.AddDays(7)).Value;
+        var token = RefreshToken.Issue(Guid.NewGuid(), "hash", TestClock.Now.AddDays(7), TestClock.Now).Value;
         _tokenService.HashRefreshToken("raw").Returns("hash");
         _refreshTokens.GetByTokenHashAsync("hash", Arg.Any<CancellationToken>()).Returns(token);
 
@@ -29,8 +31,8 @@ public sealed class LogoutCommandHandlerTests
     [Fact]
     public async Task IsIdempotent_ForAnUnknownOrAlreadyRevokedToken()
     {
-        var revoked = RefreshToken.Issue(Guid.NewGuid(), "revoked-hash", DateTime.UtcNow.AddDays(7)).Value;
-        revoked.Revoke();
+        var revoked = RefreshToken.Issue(Guid.NewGuid(), "revoked-hash", TestClock.Now.AddDays(7), TestClock.Now).Value;
+        revoked.Revoke(TestClock.Now);
         _tokenService.HashRefreshToken("revoked").Returns("revoked-hash");
         _tokenService.HashRefreshToken("unknown").Returns("unknown-hash");
         _refreshTokens.GetByTokenHashAsync("revoked-hash", Arg.Any<CancellationToken>()).Returns(revoked);

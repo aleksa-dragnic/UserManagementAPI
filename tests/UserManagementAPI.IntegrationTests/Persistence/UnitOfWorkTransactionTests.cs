@@ -80,5 +80,5 @@ public sealed class UnitOfWorkTransactionTests(DatabaseFixture fixture) : IAsync
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
         PasswordHash.Create("argon2id$hash").Value,
-        _memberRoleId).Value;
+        _memberRoleId, DateTime.UtcNow).Value;
 }

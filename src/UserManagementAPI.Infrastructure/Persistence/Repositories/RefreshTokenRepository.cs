@@ -10,7 +10,8 @@ namespace UserManagementAPI.Infrastructure.Persistence.Repositories;
 /// </summary>
 public sealed class RefreshTokenRepository(
     AppDbContext context,
-    DbContextOptions<AppDbContext> options) : IRefreshTokenRepository
+    DbContextOptions<AppDbContext> options,
+    TimeProvider timeProvider) : IRefreshTokenRepository
 {
     public Task<RefreshToken?> GetByTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default) =>
         context.RefreshTokens.FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
@@ -32,9 +33,11 @@ public sealed class RefreshTokenRepository(
             .Where(token => token.UserId == userId && token.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         foreach (var token in active)
         {
-            token.Revoke();
+            token.Revoke(utcNow);
         }
 
         await independent.SaveChangesAsync(cancellationToken);

@@ -12,10 +12,13 @@ namespace UserManagementAPI.Application.Users.Commands.AssignRole;
 public sealed class AssignRoleCommandHandler(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<AssignRoleCommand>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<AssignRoleCommand>
 {
     public async Task<Result> HandleAsync(AssignRoleCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var user = await userRepository.GetByIdAsync(command.UserId, cancellationToken);
 
         if (user is null)
@@ -33,7 +36,7 @@ public sealed class AssignRoleCommandHandler(
             return Result.Failure(Role.NotFound);
         }
 
-        var assigned = user.AssignRole(command.RoleId);
+        var assigned = user.AssignRole(command.RoleId, utcNow);
 
         if (assigned.IsFailure)
         {

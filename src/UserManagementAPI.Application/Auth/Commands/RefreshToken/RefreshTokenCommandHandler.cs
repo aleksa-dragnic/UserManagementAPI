@@ -16,10 +16,13 @@ public sealed class RefreshTokenCommandHandler(
     IUserRepository userRepository,
     ITokenService tokenService,
     TokenIssuer tokenIssuer,
-    IUnitOfWork unitOfWork) : ICommandHandler<RefreshTokenCommand, AuthTokens>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<RefreshTokenCommand, AuthTokens>
 {
     public async Task<Result<AuthTokens>> HandleAsync(RefreshTokenCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var tokenHash = tokenService.HashRefreshToken(command.RefreshToken);
         var presented = await refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
@@ -36,7 +39,7 @@ public sealed class RefreshTokenCommandHandler(
             return Result.Failure<AuthTokens>(AuthErrors.RefreshTokenReused);
         }
 
-        if (!presented.IsActive)
+        if (!presented.IsActiveAt(utcNow))
         {
             return Result.Failure<AuthTokens>(AuthErrors.InvalidRefreshToken);
         }
@@ -55,7 +58,7 @@ public sealed class RefreshTokenCommandHandler(
             return Result.Failure<AuthTokens>(canLogIn.Error);
         }
 
-        var tokens = await tokenIssuer.IssueAsync(user, presented, cancellationToken);
+        var tokens = await tokenIssuer.IssueAsync(user, presented, utcNow, cancellationToken);
 
         if (tokens.IsFailure)
         {

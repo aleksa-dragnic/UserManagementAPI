@@ -21,6 +21,7 @@ public sealed class DatabaseSeeder(
     AppDbContext context,
     IPasswordHasher passwordHasher,
     IOptions<SeedOptions> seedOptions,
+    TimeProvider timeProvider,
     ILogger<DatabaseSeeder> logger)
 {
     private readonly SeedOptions _seed = seedOptions.Value;
@@ -114,8 +115,9 @@ public sealed class DatabaseSeeder(
         var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.AdministratorPassword)).Value;
         var name = PersonName.Create("System", "Administrator").Value;
 
-        var administrator = User.Register(email, name, passwordHash, administratorRoleId).Value;
-        administrator.VerifyEmail();
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        var administrator = User.Register(email, name, passwordHash, administratorRoleId, utcNow).Value;
+        administrator.VerifyEmail(utcNow);
 
         context.Users.Add(administrator);
         await context.SaveChangesAsync(cancellationToken);
@@ -144,9 +146,15 @@ public sealed class DatabaseSeeder(
         }
 
         var passwordHash = PasswordHash.Create(passwordHasher.Hash(_seed.DemoPassword)).Value;
-        var demo = User.Register(email, PersonName.Create("Demo", "Reader").Value, passwordHash, memberRoleId).Value;
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        var demo = User.Register(
+            email,
+            PersonName.Create("Demo", "Reader").Value,
+            passwordHash,
+            memberRoleId,
+            utcNow).Value;
 
-        demo.VerifyEmail();
+        demo.VerifyEmail(utcNow);
 
         context.Users.Add(demo);
         await context.SaveChangesAsync(cancellationToken);

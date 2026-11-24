@@ -15,10 +15,13 @@ public sealed class RegisterUserCommandHandler(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IPasswordHasher passwordHasher,
-    IUnitOfWork unitOfWork) : ICommandHandler<RegisterUserCommand, Guid>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<RegisterUserCommand, Guid>
 {
     public async Task<Result<Guid>> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var email = Email.Create(command.Email);
 
         if (email.IsFailure)
@@ -51,7 +54,7 @@ public sealed class RegisterUserCommandHandler(
             ?? throw new InvalidOperationException(
                 $"The {RoleNames.Member} role does not exist; the database has not been seeded.");
 
-        var user = User.Register(email.Value, name.Value, passwordHash.Value, member.Id);
+        var user = User.Register(email.Value, name.Value, passwordHash.Value, member.Id, utcNow);
 
         if (user.IsFailure)
         {

@@ -10,7 +10,9 @@ public sealed class LockUserCommandHandlerTests
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private LockUserCommandHandler Handler() => new(_userRepository, _currentUser, _unitOfWork);
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
+    private LockUserCommandHandler Handler() => new(_userRepository, _currentUser, _unitOfWork, _clock);
 
     [Fact]
     public async Task LocksAnActiveUser_AndSaves()

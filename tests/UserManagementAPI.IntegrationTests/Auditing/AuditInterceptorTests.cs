@@ -77,7 +77,7 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var tracked = await context.Users.SingleAsync(candidate => candidate.Id == user.Id);
 
-            tracked.ChangeEmail(Email.Create("after@example.com").Value);
+            tracked.ChangeEmail(Email.Create("after@example.com").Value, DateTime.UtcNow);
             await context.SaveChangesAsync();
         }
 
@@ -102,8 +102,8 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var tracked = await context.Users.SingleAsync(candidate => candidate.Id == user.Id);
 
-            tracked.ChangeEmail(Email.Create("UNCHANGED@example.com").Value);
-            tracked.ChangeName(PersonName.Create("Ana", "Petrović").Value);
+            tracked.ChangeEmail(Email.Create("UNCHANGED@example.com").Value, DateTime.UtcNow);
+            tracked.ChangeName(PersonName.Create("Ana", "Petrović").Value, DateTime.UtcNow);
             await context.SaveChangesAsync();
         }
 
@@ -156,7 +156,7 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
             Email.Create(email).Value,
             PersonName.Create("Ana", "Petrović").Value,
             PasswordHash.Create(Hash).Value,
-            _memberRoleId).Value;
+            _memberRoleId, DateTime.UtcNow).Value;
 
         context.Users.Add(user);
         await context.SaveChangesAsync();

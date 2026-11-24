@@ -13,10 +13,13 @@ namespace UserManagementAPI.Application.Users.Commands.LockUser;
 public sealed class LockUserCommandHandler(
     IUserRepository userRepository,
     ICurrentUser currentUser,
-    IUnitOfWork unitOfWork) : ICommandHandler<LockUserCommand>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<LockUserCommand>
 {
     public async Task<Result> HandleAsync(LockUserCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         if (currentUser.UserId == command.UserId)
         {
             return Result.Failure(User.CannotLockSelf);
@@ -34,7 +37,7 @@ public sealed class LockUserCommandHandler(
             return Result.Failure(User.VersionMismatch);
         }
 
-        var locked = user.Lock();
+        var locked = user.Lock(utcNow);
 
         if (locked.IsFailure)
         {

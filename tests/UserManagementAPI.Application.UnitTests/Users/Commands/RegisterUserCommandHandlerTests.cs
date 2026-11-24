@@ -22,8 +22,10 @@ public sealed class RegisterUserCommandHandlerTests
         _roleRepository.GetByNameAsync(RoleNames.Member, Arg.Any<CancellationToken>()).Returns(Member);
     }
 
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
     private RegisterUserCommandHandler Handler() =>
-        new(_userRepository, _roleRepository, _passwordHasher, _unitOfWork);
+        new(_userRepository, _roleRepository, _passwordHasher, _unitOfWork, _clock);
 
     [Fact]
     public async Task RegistersAPendingUser_AndReturnsItsId()

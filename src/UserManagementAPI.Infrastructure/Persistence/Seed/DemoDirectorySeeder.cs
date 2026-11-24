@@ -23,7 +23,10 @@ namespace UserManagementAPI.Infrastructure.Persistence.Seed;
 /// and the audit log records them. The password hash is well formed and
 /// matches no password: these users exist to be looked at, not signed in as.
 /// </summary>
-public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirectorySeeder> logger)
+public sealed class DemoDirectorySeeder(
+    AppDbContext context,
+    TimeProvider timeProvider,
+    ILogger<DemoDirectorySeeder> logger)
 {
     public const string EmailDomain = "example.org";
 
@@ -66,6 +69,7 @@ public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirect
             .ToHashSet(StringComparer.Ordinal);
 
         var created = 0;
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
         for (var index = 0; index < UserCount; index++)
         {
@@ -81,16 +85,17 @@ public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirect
                 email,
                 PersonName.Create(first, last).Value,
                 PasswordHash.Create(UnusablePasswordHash).Value,
-                memberRoleId).Value;
+                memberRoleId,
+                utcNow).Value;
 
             // Roles first: a deactivated user can no longer be assigned one.
 
             if (index % 20 == 7)
             {
-                Ensure(user.AssignRole(administratorRoleId));
+                Ensure(user.AssignRole(administratorRoleId, utcNow));
             }
 
-            ApplyStatus(user, index);
+            ApplyStatus(user, index, utcNow);
 
             context.Users.Add(user);
             created++;
@@ -123,7 +128,7 @@ public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirect
     /// Two in ten Pending, two in ten Locked, one in ten Deactivated, the rest
     /// Active: every status has more than one page of ten.
     /// </summary>
-    private static void ApplyStatus(User user, int index)
+    private static void ApplyStatus(User user, int index, DateTime utcNow)
     {
         switch (index % 10)
         {
@@ -131,17 +136,17 @@ public sealed class DemoDirectorySeeder(AppDbContext context, ILogger<DemoDirect
                 return;
 
             case 2 or 3:
-                Ensure(user.VerifyEmail());
-                Ensure(user.Lock());
+                Ensure(user.VerifyEmail(utcNow));
+                Ensure(user.Lock(utcNow));
                 return;
 
             case 4:
-                Ensure(user.VerifyEmail());
-                Ensure(user.Deactivate());
+                Ensure(user.VerifyEmail(utcNow));
+                Ensure(user.Deactivate(utcNow));
                 return;
 
             default:
-                Ensure(user.VerifyEmail());
+                Ensure(user.VerifyEmail(utcNow));
                 return;
         }
     }

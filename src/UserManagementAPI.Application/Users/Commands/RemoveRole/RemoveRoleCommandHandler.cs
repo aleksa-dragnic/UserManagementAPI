@@ -6,10 +6,13 @@ namespace UserManagementAPI.Application.Users.Commands.RemoveRole;
 
 public sealed class RemoveRoleCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<RemoveRoleCommand>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<RemoveRoleCommand>
 {
     public async Task<Result> HandleAsync(RemoveRoleCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var user = await userRepository.GetByIdAsync(command.UserId, cancellationToken);
 
         if (user is null)
@@ -22,7 +25,7 @@ public sealed class RemoveRoleCommandHandler(
             return Result.Failure(User.VersionMismatch);
         }
 
-        var removed = user.RemoveRole(command.RoleId);
+        var removed = user.RemoveRole(command.RoleId, utcNow);
 
         if (removed.IsFailure)
         {

@@ -27,8 +27,8 @@ public sealed class AssignRoleFlowTests(DatabaseFixture fixture) : IAsyncLifetim
             Email.Create("reloaded@example.com").Value,
             PersonName.Create("Ana", "Petrović").Value,
             PasswordHash.Create("argon2id$hash").Value,
-            member.Id).Value;
-        user.VerifyEmail();
+            member.Id, DateTime.UtcNow).Value;
+        user.VerifyEmail(DateTime.UtcNow);
 
         await using (var seedContext = fixture.CreateContext())
         {
@@ -43,7 +43,7 @@ public sealed class AssignRoleFlowTests(DatabaseFixture fixture) : IAsyncLifetim
             var repository = new UserRepository(writeContext);
             var loaded = await repository.GetByIdAsync(user.Id);
 
-            loaded!.AssignRole(role.Id).IsSuccess.Should().BeTrue();
+            loaded!.AssignRole(role.Id, DateTime.UtcNow).IsSuccess.Should().BeTrue();
             repository.Update(loaded);
             await writeContext.SaveChangesAsync();
         }

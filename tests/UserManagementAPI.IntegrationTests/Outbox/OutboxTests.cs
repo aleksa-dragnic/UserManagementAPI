@@ -200,7 +200,7 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
         PasswordHash.Create("pbkdf2-sha256$1$c2FsdA==$aGFzaA==").Value,
-        _memberRoleId).Value;
+        _memberRoleId, DateTime.UtcNow).Value;
 
     private sealed class RecordingPublisher : IOutboxPublisher
     {

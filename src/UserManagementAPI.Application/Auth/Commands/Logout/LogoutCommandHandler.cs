@@ -12,10 +12,13 @@ namespace UserManagementAPI.Application.Auth.Commands.Logout;
 public sealed class LogoutCommandHandler(
     IRefreshTokenRepository refreshTokenRepository,
     ITokenService tokenService,
-    IUnitOfWork unitOfWork) : ICommandHandler<LogoutCommand>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<LogoutCommand>
 {
     public async Task<Result> HandleAsync(LogoutCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var tokenHash = tokenService.HashRefreshToken(command.RefreshToken);
         var presented = await refreshTokenRepository.GetByTokenHashAsync(tokenHash, cancellationToken);
 
@@ -24,7 +27,7 @@ public sealed class LogoutCommandHandler(
             return Result.Success();
         }
 
-        presented.Revoke();
+        presented.Revoke(utcNow);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

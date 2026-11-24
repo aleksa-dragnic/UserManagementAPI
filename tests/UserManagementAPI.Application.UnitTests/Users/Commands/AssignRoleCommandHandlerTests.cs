@@ -11,7 +11,9 @@ public sealed class AssignRoleCommandHandlerTests
     private readonly IRoleRepository _roleRepository = Substitute.For<IRoleRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private AssignRoleCommandHandler Handler() => new(_userRepository, _roleRepository, _unitOfWork);
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
+    private AssignRoleCommandHandler Handler() => new(_userRepository, _roleRepository, _unitOfWork, _clock);
 
     [Fact]
     public async Task AssignsAnExistingRole_AndSaves()

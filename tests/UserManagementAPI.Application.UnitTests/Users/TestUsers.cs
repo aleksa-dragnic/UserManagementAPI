@@ -24,26 +24,26 @@ internal static class TestUsers
     public static readonly Guid MemberRoleId = Guid.NewGuid();
 
     public static User Pending(Guid? initialRoleId = null) =>
-        User.Register(Email(), Name(), Hash(), initialRoleId ?? MemberRoleId).Value;
+        User.Register(Email(), Name(), Hash(), initialRoleId ?? MemberRoleId, TestClock.Now).Value;
 
     public static User Active(Guid? initialRoleId = null)
     {
         var user = Pending(initialRoleId);
-        user.VerifyEmail();
+        user.VerifyEmail(TestClock.Now);
         return user;
     }
 
     public static User Locked()
     {
         var user = Active();
-        user.Lock();
+        user.Lock(TestClock.Now);
         return user;
     }
 
     public static User Deactivated()
     {
         var user = Active();
-        user.Deactivate();
+        user.Deactivate(TestClock.Now);
         return user;
     }
 
@@ -54,7 +54,7 @@ internal static class TestUsers
 
         foreach (var roleId in otherRoleIds)
         {
-            user.AssignRole(roleId);
+            user.AssignRole(roleId, TestClock.Now);
         }
 
         return user;

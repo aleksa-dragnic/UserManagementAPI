@@ -6,10 +6,13 @@ namespace UserManagementAPI.Application.Users.Commands.UpdateUser;
 
 public sealed class UpdateUserCommandHandler(
     IUserRepository userRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<UpdateUserCommand>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<UpdateUserCommand>
 {
     public async Task<Result> HandleAsync(UpdateUserCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var user = await userRepository.GetByIdAsync(command.UserId, cancellationToken);
 
         if (user is null)
@@ -42,14 +45,14 @@ public sealed class UpdateUserCommandHandler(
             return Result.Failure(User.EmailNotUnique);
         }
 
-        var emailChanged = user.ChangeEmail(email.Value);
+        var emailChanged = user.ChangeEmail(email.Value, utcNow);
 
         if (emailChanged.IsFailure)
         {
             return emailChanged;
         }
 
-        var nameChanged = user.ChangeName(name.Value);
+        var nameChanged = user.ChangeName(name.Value, utcNow);
 
         if (nameChanged.IsFailure)
         {

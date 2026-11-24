@@ -24,7 +24,7 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
     public async Task AUserRoundTrips_WithEveryValueObjectIntact()
     {
         var user = NewUser("ana.petrovic@example.com");
-        user.VerifyEmail();
+        user.VerifyEmail(DateTime.UtcNow);
 
         await using (var writeContext = fixture.CreateContext())
         {
@@ -47,8 +47,8 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
     public async Task Status_ConvertsToAndFromItsIntId()
     {
         var user = NewUser("locked.user@example.com");
-        user.VerifyEmail();
-        user.Lock();
+        user.VerifyEmail(DateTime.UtcNow);
+        user.Lock(DateTime.UtcNow);
 
         await using (var writeContext = fixture.CreateContext())
         {
@@ -113,8 +113,8 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
         // The role must exist: user_roles.role_id is a foreign key to roles.
         var role = Role.Create(RoleNames.Administrator).Value;
         var user = NewUser("with.roles@example.com");
-        user.VerifyEmail();
-        user.AssignRole(role.Id);
+        user.VerifyEmail(DateTime.UtcNow);
+        user.AssignRole(role.Id, DateTime.UtcNow);
 
         await using (var writeContext = fixture.CreateContext())
         {
@@ -134,5 +134,5 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
         PasswordHash.Create("argon2id$hash").Value,
-        _memberRoleId).Value;
+        _memberRoleId, DateTime.UtcNow).Value;
 }

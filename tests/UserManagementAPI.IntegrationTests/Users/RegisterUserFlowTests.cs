@@ -34,7 +34,7 @@ public sealed class RegisterUserFlowTests(DatabaseFixture fixture) : IAsyncLifet
         await using (var context = fixture.CreateContext())
         {
             var handler = new RegisterUserCommandHandler(
-                new UserRepository(context), new RoleRepository(context), hasher, context);
+                new UserRepository(context), new RoleRepository(context), hasher, context, TimeProvider.System);
 
             var result = await handler.HandleAsync(
                 new RegisterUserCommand("Ana.Petrovic@Example.com", "Ana", "Petrović", password));

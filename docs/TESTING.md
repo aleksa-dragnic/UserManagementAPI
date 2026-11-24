@@ -72,11 +72,21 @@ unless the row says otherwise.
 | **mixed, 50 + 5 iterations/s** | reads 12 ms, writes 91 ms | reads 1.9 s, writes 5.4 s | reads 5.4 s, writes 12.5 s | 124 req/s | 0 % | **missed** |
 | mixed, `DOTNET_gcServer=0` | reads 9 ms, writes 21 ms | reads 0.9 s, writes 2.3 s | reads 2.2 s, writes 5.1 s | 148 req/s | 0 % | missed |
 
-Reads alone hold their thresholds at four to six times the mixed run's rate;
+**On the GitHub runner, the same day**, `ubuntu-24.04` through the Load test
+workflow ([run 45396915748](https://github.com/aleksa-dragnic/UserManagementAPI/actions/runs/45396915748)),
+the mixed run **meets every threshold**:
+
+| Run | p50 | p95 | p99 | Throughput | Errors | Thresholds |
+|---|---|---|---|---|---|---|
+| mixed, 50 + 5 iterations/s | reads 1.4 ms, writes 2.3 ms | reads 2.9 ms, writes 57 ms | reads 4.4 ms, writes 108 ms | 164 req/s | 0 % | met |
+
+So the local tails below are the workstation's, not the service's.
+
+On the workstation, reads alone hold their thresholds at four to six times the mixed run's rate;
 two runs of the same capacity test reached 504 and 736 req/s, so on this
 machine capacity varies by a third between runs. Together
 with registrations, the tail goes to seconds while the median stays low, so
-requests queue behind something rather than being uniformly slow. The working
-hypotheses are GC pauses from Argon2id's large allocations and thread-pool
-starvation from hashing synchronously on request threads; neither is proven.
-Tracked as #128, which also asks for the same run on the GitHub runner.
+requests queue behind something rather than being uniformly slow. On the small
+VM that looked like GC pauses from Argon2id's large allocations or thread-pool
+starvation; the runner's numbers say the VM runs out first. #128 keeps naming
+which resource it is, so a local run is not mistaken for a regression.

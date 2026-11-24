@@ -12,7 +12,8 @@ issue  ->  plan  ->  branch  ->  agent draft  ->  review  ->  CI  ->  merge
 ```
 
 1. **Issue.** Every unit of work starts as an issue with a "Done when" list,
-   in a milestone. Deferred ideas stay open with the `future` label.
+   in a milestone. Deferred ideas are not issues: they live in
+   [`ROADMAP.md`](ROADMAP.md), each with its reasoning, until one is started.
 2. **Plan.** Before any code, the agent reads the issue, the ADRs it touches and
    the code, and writes a short plan: the files, the approach, the tests, what
    is left out. The maintainer accepts it, changes it or rejects it. A plan that

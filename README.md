@@ -197,6 +197,8 @@ running; no connection string is needed.
   misbehaves, and how the database is restored
 - [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) — how changes are made with a
   coding agent, and how they are checked
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — what the API deliberately does not do
+  yet, and what each idea would take
 - [`AGENTS.md`](AGENTS.md) — the rules the agent works to
 - [`SECURITY.md`](SECURITY.md) — how to report a vulnerability
 

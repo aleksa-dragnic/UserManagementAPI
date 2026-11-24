@@ -54,18 +54,39 @@ public sealed class ClockTests
         // sees no calls at all, which is the usual way an architecture test rots.
         reads.Should().Contain(Registration, "the scan must see the one read that is allowed");
 
-        reads.Where(read => read != Registration).Should().BeEmpty(
+        // Joined, so a failure lists every offender rather than the first one.
+        string.Join(Environment.NewLine, reads.Where(read => read != Registration)).Should().BeEmpty(
             "the time comes from TimeProvider, injected or passed down as utcNow (#84)");
     }
 
     private static IEnumerable<string> ClockReads() =>
         from assembly in ProductionAssemblies
         from type in assembly.GetTypes()
+        where IsOurs(type)
         from method in MethodsOf(type)
         from callee in CalledMethods(method)
         let name = $"{callee.DeclaringType?.FullName}.{callee.Name}"
         where SystemClock.Contains(name)
         select $"{Owner(method)} -> {name}";
+
+    /// <summary>
+    /// The code written here, generated types nested in it included. CI runs the
+    /// tests under coverlet, which injects its own tracker type into each
+    /// assembly, and that type reads the clock; it is not ours to hold to this.
+    /// Program has no namespace, because Program.cs uses top-level statements.
+    /// </summary>
+    private static bool IsOurs(Type type)
+    {
+        var outermost = type;
+
+        while (outermost.DeclaringType is not null)
+        {
+            outermost = outermost.DeclaringType;
+        }
+
+        return outermost == typeof(Program) ||
+               outermost.Namespace?.StartsWith("UserManagementAPI", StringComparison.Ordinal) == true;
+    }
 
     private static IEnumerable<MethodBase> MethodsOf(Type type)
     {

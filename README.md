@@ -123,7 +123,9 @@ while it wakes up. The database is Neon, also free tier.
   correlation id on every response and every log line of a request (a client's own is kept when
   it is at most 64 letters, digits, `-`, `_` or `.`); liveness and readiness split
 - Structured logging with Serilog, rendered as JSON in production so a log record cannot be forged from a request path
-- Multi-stage Docker build, compose stack with PostgreSQL and an OTLP collector
+- Multi-stage Docker build on base images pinned by digest, scanned with Trivy
+  in CI (a fixable CRITICAL or HIGH finding fails the build) and described by a
+  CycloneDX SBOM; compose stack with PostgreSQL and an OTLP collector
 - GitHub Actions: build with warnings as errors, tests against a real
   PostgreSQL in a container, coverage
 

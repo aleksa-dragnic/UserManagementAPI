@@ -93,3 +93,42 @@ jobs:
 
       - name: Build the container image
         run: docker build --tag usermanagementapi:${{ github.sha }} .
+
+      # The image is scanned before anything could ship it (#83). Trivy runs as
+      # its own image, pinned by digest like every action here, rather than as a
+      # third-party action with this workflow's token. A CRITICAL or HIGH finding
+      # that has a fix fails the build; one without a fix is reported, because
+      # there is nothing to do about it yet. No suppression file: a finding is
+      # fixed, or written down with a reason and an expiry.
+      - name: Scan the container image
+        run: >
+          docker run --rm
+          -v /var/run/docker.sock:/var/run/docker.sock
+          aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image
+          --severity CRITICAL,HIGH
+          --ignore-unfixed
+          --exit-code 1
+          --no-progress
+          usermanagementapi:${{ github.sha }}
+
+      # What the image contains, as CycloneDX: the OS packages and every NuGet
+      # package the published app carries, with versions.
+      - name: Write the SBOM
+        run: >
+          docker run --rm
+          -v /var/run/docker.sock:/var/run/docker.sock
+          -v "$PWD/artifacts:/out"
+          aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image
+          --format cyclonedx
+          --output /out/sbom.cdx.json
+          --no-progress
+          usermanagementapi:${{ github.sha }}
+
+      - name: Upload the SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: ./artifacts/sbom.cdx.json
+          retention-days: 30

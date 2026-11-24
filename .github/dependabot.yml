@@ -104,3 +104,23 @@ updates:
           - "*"
         exclude-patterns:
           - "github/codeql-action*"
+
+  # The Dockerfile pins both base images by digest (#83). This moves the
+  # digests when Microsoft publishes a patched image; the SDK and the runtime
+  # come together so a build never mixes two servicing releases. A new major
+  # (.NET 11) is a decision, not an update.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: build
+    groups:
+      dotnet-images:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"

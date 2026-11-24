@@ -1,0 +1,87 @@
+name: Migrate database
+
+# Applies the EF Core migrations to the deployed database (Neon), from the
+# idempotent script CI already produces, over the direct connection
+# (docs/DATABASE.md). The service does not migrate on startup, and on
+# 2026-11-24 code reached production before its tables did: every login was a
+# 500. This runs when a migration reaches main, and by hand.
+#
+# Render deploys the same push, but /health/ready fails while a migration is
+# unapplied (PendingMigrationsHealthCheck), so the previous version keeps
+# serving until this has run. Migrations are additive first - a column is
+# dropped only in a later deploy than the code that stops using it - so the
+# previous version is safe on the new schema.
+#
+# Needs the repository secret DATABASE_MIGRATIONS_URL: the direct (not pooled)
+# Neon connection string, in the postgresql:// form. The maintainer sets it.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - src/UserManagementAPI.Infrastructure/Migrations/**
+      - .github/workflows/migrate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Two runs against one database wait for each other; neither is cancelled.
+concurrency:
+  group: migrate-database
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  migrate:
+    name: Apply migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Require the connection string
+        env:
+          DATABASE_MIGRATIONS_URL: ${{ secrets.DATABASE_MIGRATIONS_URL }}
+        run: |
+          if [ -z "$DATABASE_MIGRATIONS_URL" ]; then
+            echo "::error::The repository secret DATABASE_MIGRATIONS_URL is not set (see the comment at the top of this workflow)."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      # The design-time factory needs a connection string to build its options;
+      # `script` connects to nothing.
+      - name: Script the migrations
+        env:
+          ConnectionStrings__Migrations: Host=localhost;Database=unused
+        run: >
+          dotnet tool restore &&
+          dotnet dotnet-ef migrations script
+          --idempotent
+          --configuration Release
+          --project src/UserManagementAPI.Infrastructure
+          --startup-project src/UserManagementAPI.Api
+          --output migrations.sql
+
+      - name: Apply
+        env:
+          DATABASE_MIGRATIONS_URL: ${{ secrets.DATABASE_MIGRATIONS_URL }}
+        run: psql "$DATABASE_MIGRATIONS_URL" --no-psqlrc -v ON_ERROR_STOP=1 -f migrations.sql
+
+      - name: Report what is applied
+        env:
+          DATABASE_MIGRATIONS_URL: ${{ secrets.DATABASE_MIGRATIONS_URL }}
+        run: >
+          psql "$DATABASE_MIGRATIONS_URL" --no-psqlrc -At
+          -c 'SELECT migration_id FROM "__EFMigrationsHistory" ORDER BY migration_id DESC LIMIT 3'

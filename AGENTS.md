@@ -74,8 +74,10 @@ dotnet dotnet-ef migrations script --idempotent \
 connection string, from user secrets or the environment. `script` connects to
 nothing, so any value works there, as in CI:
 `ConnectionStrings__Migrations="Host=localhost;Database=unused"`. Never point
-`database update` at the deployed database; that step is the maintainer's
-(`docs/DATABASE.md`).
+`database update` at the deployed database: the `Migrate database` workflow
+applies migrations when they reach `main`, with a secret only the maintainer
+holds (`docs/DATABASE.md`). A pull request with a migration says so, and the
+migration is additive: the previous version must run on the new schema.
 
 CI (`.github/workflows/ci.yml`) runs the same restore, build and test, scripts
 the migrations and builds the container image. CodeQL runs beside it.

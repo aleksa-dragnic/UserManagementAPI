@@ -7,9 +7,10 @@
 #   Seed__AdministratorPassword  the bootstrap administrator's password
 #   Seed__DemoPassword           the read-only demo account's password
 #
-# Migrations are applied deliberately from a workstation against the direct Neon
-# connection string before a deploy that changes the schema; the service does not
-# migrate on startup. Database__SeedOnStartup is switched on for one boot to
+# Migrations are applied by the "Migrate database" workflow against the direct
+# Neon connection string (docs/DATABASE.md); the service does not migrate on
+# startup, and /health/ready fails until they are in, so a deploy that needs
+# them waits for them. Database__SeedOnStartup is switched on for one boot to
 # create the accounts, then set back to false.
 services:
   - type: web

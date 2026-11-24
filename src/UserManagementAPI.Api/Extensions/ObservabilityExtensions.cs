@@ -70,11 +70,16 @@ public static class ObservabilityExtensions
         // Liveness answers "is this process alive": no dependency is checked,
         // because a database that is briefly away must not make an orchestrator
         // restart a perfectly healthy process. Readiness answers "can it serve
-        // traffic", and that does need the database.
+        // traffic", and that needs the database, with every migration this
+        // build carries applied to it.
         services
             .AddHealthChecks()
             .AddDbContextCheck<AppDbContext>(
                 name: "database",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"])
+            .AddCheck<PendingMigrationsHealthCheck>(
+                name: "migrations",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready"]);
 

@@ -1,5 +1,7 @@
 using System.Net;
 
+using Microsoft.EntityFrameworkCore;
+
 using UserManagementAPI.Api.Middleware;
 
 namespace UserManagementAPI.IntegrationTests.Functional;
@@ -69,5 +71,32 @@ public sealed class ObservabilityTests(DatabaseFixture fixture) : IAsyncLifetime
         live.StatusCode.Should().Be(HttpStatusCode.OK);
         ready.StatusCode.Should().Be(HttpStatusCode.OK);
         legacy.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Readiness_FailsWhileAMigrationIsUnapplied_AndLivenessDoesNot()
+    {
+        // As on 2026-11-24: a build whose newest migration the database lacks.
+        await using var context = fixture.CreateContext();
+        var newest = (await context.Database.GetAppliedMigrationsAsync()).Last();
+        var productVersion = await context.Database
+            .SqlQuery<string>($"SELECT product_version AS \"Value\" FROM \"__EFMigrationsHistory\" WHERE migration_id = {newest}")
+            .SingleAsync();
+        await context.Database.ExecuteSqlAsync($"DELETE FROM \"__EFMigrationsHistory\" WHERE migration_id = {newest}");
+
+        try
+        {
+            var client = _factory.CreateClient();
+
+            (await client.GetAsync("/health/ready")).StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+            (await client.GetAsync("/health/live")).StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+        finally
+        {
+            await context.Database.ExecuteSqlAsync(
+                $"INSERT INTO \"__EFMigrationsHistory\" (migration_id, product_version) VALUES ({newest}, {productVersion})");
+        }
+
+        (await _factory.CreateClient().GetAsync("/health/ready")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

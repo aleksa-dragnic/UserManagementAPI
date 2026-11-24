@@ -186,6 +186,8 @@ running; no connection string is needed.
   run it
 - [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) — what is traced and
   measured, and how to send it to Grafana Cloud
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — what to do when the deployed instance
+  misbehaves, and how the database is restored
 - [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) — how changes are made with a
   coding agent, and how they are checked
 - [`AGENTS.md`](AGENTS.md) — the rules the agent works to

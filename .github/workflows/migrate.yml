@@ -1,8 +1,7 @@
 name: Migrate database
 
-# Applies the EF Core migrations to the deployed database (Neon), from the
-# idempotent script CI already produces, over the direct connection
-# (docs/DATABASE.md). The service does not migrate on startup, and on
+# Applies the EF Core migrations to the deployed database (Neon) with
+# `dotnet ef database update`, over the direct connection (docs/DATABASE.md). The service does not migrate on startup, and on
 # 2026-11-24 code reached production before its tables did: every login was a
 # 500. This runs when a migration reaches main, and by hand.
 #
@@ -13,7 +12,11 @@ name: Migrate database
 # previous version is safe on the new schema.
 #
 # Needs the repository secret DATABASE_MIGRATIONS_URL: the direct (not pooled)
-# Neon connection string, in the postgresql:// form. The maintainer sets it.
+# Neon connection string in the key=value form the repository uses everywhere,
+# `Host=...;Database=...;Username=...;Password=...;SSL Mode=Require`. One pair
+# of surrounding quotes is tolerated; a postgresql:// URL is refused with a
+# message. The maintainer sets it. (The first version ran psql, which reads
+# neither form; its two runs stopped before touching the database.)
 
 on:
   push:
@@ -63,28 +66,30 @@ jobs:
       - name: Restore
         run: dotnet restore UserManagementAPI.sln
 
-      # The design-time factory needs a connection string to build its options;
-      # `script` connects to nothing.
-      - name: Script the migrations
-        env:
-          ConnectionStrings__Migrations: Host=localhost;Database=unused
-        run: >
-          dotnet tool restore &&
-          dotnet dotnet-ef migrations script
-          --idempotent
-          --configuration Release
-          --project src/UserManagementAPI.Infrastructure
-          --startup-project src/UserManagementAPI.Api
-          --output migrations.sql
-
       - name: Apply
         env:
-          DATABASE_MIGRATIONS_URL: ${{ secrets.DATABASE_MIGRATIONS_URL }}
-        run: psql "$DATABASE_MIGRATIONS_URL" --no-psqlrc -v ON_ERROR_STOP=1 -f migrations.sql
-
-      - name: Report what is applied
-        env:
-          DATABASE_MIGRATIONS_URL: ${{ secrets.DATABASE_MIGRATIONS_URL }}
-        run: >
-          psql "$DATABASE_MIGRATIONS_URL" --no-psqlrc -At
-          -c 'SELECT migration_id FROM "__EFMigrationsHistory" ORDER BY migration_id DESC LIMIT 3'
+          RAW: ${{ secrets.DATABASE_MIGRATIONS_URL }}
+        run: |
+          value="${RAW#\"}"
+          value="${value%\"}"
+          case "$value" in
+            postgres://*|postgresql://*)
+              echo "::error::DATABASE_MIGRATIONS_URL is a URL; set it in the key=value form: Host=...;Database=...;Username=...;Password=...;SSL Mode=Require"
+              exit 1
+              ;;
+          esac
+          # The log masks the secret as stored; the unquoted value is another
+          # string, so it is masked too before anything could print it.
+          echo "::add-mask::$value"
+          export ConnectionStrings__Migrations="$value"
+          dotnet tool restore
+          dotnet dotnet-ef database update \
+            --configuration Release \
+            --project src/UserManagementAPI.Infrastructure \
+            --startup-project src/UserManagementAPI.Api
+          echo "Applied, newest last:"
+          dotnet dotnet-ef migrations list \
+            --no-build \
+            --configuration Release \
+            --project src/UserManagementAPI.Infrastructure \
+            --startup-project src/UserManagementAPI.Api | tail -3

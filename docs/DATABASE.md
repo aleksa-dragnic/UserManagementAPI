@@ -58,8 +58,9 @@ holds no addresses, with an index on the last failure for the hourly cleanup
   (`Database:MigrateOnStartup` is on in Development).
 - **In a deployed instance** the `Migrate database` workflow applies them
   (`.github/workflows/migrate.yml`): when a migration reaches `main`, and by
-  hand. It runs the idempotent script with `psql` over the **direct** Neon
-  connection string, the repository secret `DATABASE_MIGRATIONS_URL`. The
+  hand. It runs `dotnet ef database update` over the **direct** Neon
+  connection string, the repository secret `DATABASE_MIGRATIONS_URL`, in the
+  same `Host=...;Database=...` form as `ConnectionStrings:Migrations`. The
   service does not migrate on startup. Until 2026-11-24 this was a step from a
   workstation, and that day it was missed: the login backoff (#131) reached
   production before `login_failures` did, and every login answered 500.

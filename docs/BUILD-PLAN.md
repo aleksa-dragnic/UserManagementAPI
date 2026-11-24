@@ -568,7 +568,7 @@ The quick start is the part to get right. If someone has to configure a database
 
 **Ship v1.0 at M4 if time pressure appears.** M0 through M4 is already a complete, defensible API. M5 and M6 are what raise it from good to distinctive. If the job search accelerates, tag `v1.0.0` after M4 and continue in the open rather than leaving an unfinished `main`.
 
-**Keep the scope closed.** The strongest signal in a portfolio project is a finished one. Ideas for multi-tenancy, OIDC, webhooks and admin UIs go into GitHub issues labelled `future`, not into `main`. Issues that are open and reasoned about look like planning; half-built features look like abandonment.
+**Keep the scope closed.** The strongest signal in a portfolio project is a finished one. Ideas for multi-tenancy, OIDC, webhooks and admin UIs go into GitHub issues labelled `future`, not into `main`. (Since 2026-11-24 they live in `docs/ROADMAP.md` instead, so the tracker holds only work in progress.) Issues that are open and reasoned about look like planning; half-built features look like abandonment.
 
 **Write the CV bullets from the ADRs.** When this is done, the two or three lines on the CV come straight from the decisions that were recorded — modelled X, chose Y over Z for reason W. That is a much stronger sentence than a list of technologies, and it survives the follow-up question in an interview.
 

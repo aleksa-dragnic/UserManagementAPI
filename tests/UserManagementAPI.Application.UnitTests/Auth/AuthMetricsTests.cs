@@ -72,6 +72,7 @@ public sealed class AuthMetricsTests : IDisposable
             Substitute.For<IPermissionLookup>(),
             Substitute.For<ITokenService>(),
             Substitute.For<IRefreshTokenRepository>()),
+        Substitute.For<ILoginThrottle>(),
         _unitOfWork,
         _clock);
 }

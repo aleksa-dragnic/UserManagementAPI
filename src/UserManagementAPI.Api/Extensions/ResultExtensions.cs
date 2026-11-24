@@ -1,6 +1,9 @@
+using System.Globalization;
+
 using Microsoft.AspNetCore.Mvc;
 
 using UserManagementAPI.Api.Errors;
+using UserManagementAPI.Application.Common;
 using UserManagementAPI.Domain.Common;
 
 namespace UserManagementAPI.Api.Extensions;
@@ -20,6 +23,13 @@ public static class ResultExtensions
         }
 
         var problem = ErrorMapping.ToProblemDetails(result.Error, httpContext);
+
+        // A refusal that ends by itself says when, as the rate limiter's does.
+        if (result.Error is RateLimitedError limited)
+        {
+            httpContext.Response.Headers.RetryAfter =
+                ((int)Math.Ceiling(limited.RetryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+        }
 
         // A JsonResult, not an ObjectResult: [Produces] on a controller rewrites
         // the content types of every ObjectResult an action returns, and the

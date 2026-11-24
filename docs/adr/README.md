@@ -28,3 +28,4 @@ in the pull request that implements it.
 | [0021](0021-optimistic-concurrency-on-users.md) | Optimistic concurrency on users, through a version and If-Match | M7 |
 | [0022](0022-working-with-a-coding-agent.md) | Working with a coding agent: the agent drafts, the maintainer decides and merges | post-2.1 |
 | [0023](0023-idempotency-key-for-registration.md) | An Idempotency-Key makes registering a user safe to retry | post-2.1 |
+| [0024](0024-login-backoff-per-account.md) | A growing delay per email slows password guessing, without a lockout | post-2.1 |

@@ -23,6 +23,7 @@ public sealed class ErrorMappingTests
         ["Request.InvalidIdempotencyKey"] = 400,
         ["Idempotency.KeyReused"] = 422,
         ["Idempotency.InProgress"] = 409,
+        ["Auth.TooManyFailedAttempts"] = 429,
         // Answered 413 by its handler, which sets the status itself; its type is Failure.
         ["Request.ContentTooLarge"] = 400,
         ["Request.Malformed"] = 400,
@@ -99,5 +100,6 @@ public sealed class ErrorMappingTests
             .Where(field => field.FieldType == typeof(Error))
             .Select(field => (Error)field.GetValue(null)!)
             .Where(error => error != Error.None)
-            .Append(new ValidationError([]));
+            .Append(new ValidationError([]))
+            .Append(AuthErrors.TooManyFailedAttempts(TimeSpan.FromSeconds(1)));
 }

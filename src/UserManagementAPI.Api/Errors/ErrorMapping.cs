@@ -16,6 +16,7 @@ namespace UserManagementAPI.Api.Errors;
 ///   NotFound                         404 Not Found
 ///   Conflict                         409 Conflict
 ///   PreconditionFailed               412 Precondition Failed
+///   TooManyRequests                  429 Too Many Requests, with Retry-After
 ///   Failure                          400 Bad Request
 ///
 /// The code itself travels in the "errorCode" extension so a client can branch
@@ -30,6 +31,7 @@ internal static class ErrorMapping
         ErrorType.NotFound => StatusCodes.Status404NotFound,
         ErrorType.Conflict => StatusCodes.Status409Conflict,
         ErrorType.PreconditionFailed => StatusCodes.Status412PreconditionFailed,
+        ErrorType.TooManyRequests => StatusCodes.Status429TooManyRequests,
         _ => StatusCodes.Status400BadRequest
     };
 
@@ -67,6 +69,7 @@ internal static class ErrorMapping
         StatusCodes.Status409Conflict => "Conflict",
         StatusCodes.Status412PreconditionFailed => "Precondition Failed",
         StatusCodes.Status422UnprocessableEntity => "Unprocessable Content",
+        StatusCodes.Status429TooManyRequests => "Too Many Requests",
         _ => "Bad Request"
     };
 }

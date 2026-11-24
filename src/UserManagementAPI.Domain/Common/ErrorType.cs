@@ -23,5 +23,7 @@ public enum ErrorType
     Conflict,
 
     /// <summary>The state changed after the version the caller read. 412.</summary>
-    PreconditionFailed
+    PreconditionFailed,
+
+    TooManyRequests
 }

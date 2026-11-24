@@ -63,3 +63,7 @@ On GitHub: Actions → **Load test** → Run workflow. It does the same on the
 runner and keeps `summary.json` as the `k6-summary` artifact.
 
 Results and their machine are recorded in [`docs/TESTING.md`](../docs/TESTING.md).
+The GitHub runner meets every threshold. A Docker Desktop VM with about
+3.5 GiB of memory does not, by seconds at p99, because the machine runs out
+before the service does (#128): read a local run against the runner's numbers
+before calling it a regression.

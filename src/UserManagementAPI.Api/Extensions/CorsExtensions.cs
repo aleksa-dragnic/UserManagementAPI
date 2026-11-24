@@ -25,13 +25,14 @@ public static class CorsExtensions
         {
             policy
                 .WithOrigins(options.AllowedOrigins)
-                .WithHeaders("Authorization", "Content-Type", "Accept", "If-None-Match", "If-Match")
+                .WithHeaders("Authorization", "Content-Type", "Accept", "If-None-Match", "If-Match", "Idempotency-Key")
                 .WithMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS")
                 .WithExposedHeaders(
                     "X-Pagination",
                     "ETag",
                     "Retry-After",
                     "X-Correlation-Id",
+                    "Idempotency-Replayed",
                     "api-supported-versions",
                     "api-deprecated-versions");
 

@@ -14,6 +14,11 @@ namespace UserManagementAPI.Infrastructure.Outbox;
 /// A failing message backs off exponentially and is abandoned at the configured
 /// ceiling, so a poison message costs a few retries and then stops — it never
 /// blocks the messages behind it.
+///
+/// Safe with more than one replica: the batch is claimed with
+/// <c>FOR UPDATE SKIP LOCKED</c> inside a transaction that lasts until the
+/// outcome is saved, so a second processor polling at the same moment skips
+/// the rows this one holds and takes the next ones, or none (ADR 0008).
 /// </summary>
 public sealed class OutboxBatchProcessor(
     AppDbContext context,
@@ -26,15 +31,38 @@ public sealed class OutboxBatchProcessor(
     /// <summary>Returns the number of messages published in this batch.</summary>
     public async Task<int> ProcessBatchAsync(CancellationToken cancellationToken = default)
     {
+        // With EnableRetryOnFailure on, a transaction has to run inside the
+        // execution strategy (ADR 0002). A retry re-runs the whole batch, which
+        // can publish a message twice; delivery is at least once either way.
+        var strategy = context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(ProcessInTransactionAsync, cancellationToken);
+    }
+
+    private async Task<int> ProcessInTransactionAsync(CancellationToken cancellationToken)
+    {
+        // A retried attempt starts from what the database holds, not from
+        // entities the failed attempt had already changed.
+        context.ChangeTracker.Clear();
+
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
         var now = DateTime.UtcNow;
 
+        // The row locks are held until the transaction ends, so the claim covers
+        // publishing as well as reading. SKIP LOCKED makes a concurrent poll
+        // pass over the claimed rows instead of waiting for them.
         var messages = await context.OutboxMessages
-            .Where(message =>
-                message.ProcessedOnUtc == null &&
-                message.Attempts < _options.MaxAttempts &&
-                (message.NextAttemptOnUtc == null || message.NextAttemptOnUtc <= now))
-            .OrderBy(message => message.OccurredOnUtc)
-            .Take(_options.BatchSize)
+            .FromSql($"""
+                SELECT *
+                FROM outbox_messages
+                WHERE processed_on_utc IS NULL
+                  AND attempts < {_options.MaxAttempts}
+                  AND (next_attempt_on_utc IS NULL OR next_attempt_on_utc <= {now})
+                ORDER BY occurred_on_utc
+                LIMIT {_options.BatchSize}
+                FOR UPDATE SKIP LOCKED
+                """)
             .ToListAsync(cancellationToken);
 
         var published = 0;
@@ -81,6 +109,8 @@ public sealed class OutboxBatchProcessor(
         {
             await context.SaveChangesAsync(cancellationToken);
         }
+
+        await transaction.CommitAsync(cancellationToken);
 
         return published;
     }

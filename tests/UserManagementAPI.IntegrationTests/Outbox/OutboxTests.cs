@@ -117,6 +117,71 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         message.NextAttemptOnUtc.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task TwoProcessorsPollingAtOnce_PublishEachMessageOnce()
+    {
+        // Two service providers stand in for two replicas: separate containers,
+        // separate connections, one database.
+        var holding = new HoldingPublisher();
+        var second = new RecordingPublisher();
+        await using var first = fixture.CreateServiceProvider(services =>
+            services.AddSingleton<IOutboxPublisher>(holding));
+        await using var other = fixture.CreateServiceProvider(services =>
+            services.AddSingleton<IOutboxPublisher>(second));
+
+        foreach (var email in new[] { "one@example.com", "two@example.com", "three@example.com" })
+        {
+            await RegisterAsync(first, email);
+        }
+
+        // The first processor claims the batch and stops inside its first
+        // publish, holding the claim; the second polls while it is held.
+        var firstBatch = ProcessBatchAsync(first);
+        await holding.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        (await ProcessBatchAsync(other)).Should().Be(0);
+        second.Published.Should().BeEmpty();
+
+        holding.Release.SetResult();
+        (await firstBatch).Should().Be(3);
+
+        holding.Published.Select(message => message.Id).Should().OnlyHaveUniqueItems().And.HaveCount(3);
+
+        await using var verifyContext = fixture.CreateContext();
+        verifyContext.OutboxMessages.Should().HaveCount(3)
+            .And.OnlyContain(message => message.ProcessedOnUtc != null);
+    }
+
+    [Fact]
+    public async Task ASecondProcessor_TakesTheRowsTheFirstDidNotClaim()
+    {
+        // A batch of two over three messages: the first processor holds the two
+        // oldest, and the second is not blocked by them - it takes the third.
+        var batchOfTwo = new Dictionary<string, string?> { ["Outbox:BatchSize"] = "2" };
+        var holding = new HoldingPublisher();
+        var second = new RecordingPublisher();
+        await using var first = fixture.CreateServiceProvider(
+            services => services.AddSingleton<IOutboxPublisher>(holding), batchOfTwo);
+        await using var other = fixture.CreateServiceProvider(
+            services => services.AddSingleton<IOutboxPublisher>(second), batchOfTwo);
+
+        foreach (var email in new[] { "one@example.com", "two@example.com", "three@example.com" })
+        {
+            await RegisterAsync(first, email);
+        }
+
+        var firstBatch = ProcessBatchAsync(first);
+        await holding.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        (await ProcessBatchAsync(other)).Should().Be(1);
+
+        holding.Release.SetResult();
+        (await firstBatch).Should().Be(2);
+
+        holding.Published.Select(message => message.Id)
+            .Should().NotIntersectWith(second.Published.Select(message => message.Id));
+    }
+
     private async Task RegisterAsync(ServiceProvider provider, string email)
     {
         await using var scope = provider.CreateAsyncScope();
@@ -145,6 +210,26 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         {
             Published.Add(message);
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// Records what it publishes, and blocks inside the first publish until the
+    /// test releases it, so a batch can be held open at a known point.
+    /// </summary>
+    private sealed class HoldingPublisher : IOutboxPublisher
+    {
+        public List<OutboxMessage> Published { get; } = [];
+
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task PublishAsync(OutboxMessage message, CancellationToken cancellationToken = default)
+        {
+            Entered.TrySetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            Published.Add(message);
         }
     }
 

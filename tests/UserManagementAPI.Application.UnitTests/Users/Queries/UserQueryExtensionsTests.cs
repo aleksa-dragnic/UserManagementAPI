@@ -86,15 +86,15 @@ public sealed class UserQueryExtensionsTests
         var ivana = NewUser("ivana@example.com", "Ivana", "Petrović");
 
         var marko = NewUser("marko.jovanovic@example.com", "Marko", "Jovanović");
-        marko.VerifyEmail();
+        marko.VerifyEmail(TestClock.Now);
 
         var jelena = NewUser("jelena@petrovic.rs", "Jelena", "Nikolić");
-        jelena.VerifyEmail();
-        jelena.Lock();
+        jelena.VerifyEmail(TestClock.Now);
+        jelena.Lock(TestClock.Now);
 
         return new[] { ana, ivana, marko, jelena }.AsQueryable();
     }
 
     private static User NewUser(string email, string first, string last) =>
-        User.Register(TestUsers.Email(email), TestUsers.Name(first, last), TestUsers.Hash(), TestUsers.MemberRoleId).Value;
+        User.Register(TestUsers.Email(email), TestUsers.Name(first, last), TestUsers.Hash(), TestUsers.MemberRoleId, TestClock.Now).Value;
 }

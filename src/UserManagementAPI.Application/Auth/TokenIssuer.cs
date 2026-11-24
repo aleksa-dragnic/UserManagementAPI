@@ -16,9 +16,11 @@ public sealed class TokenIssuer(
     ITokenService tokenService,
     IRefreshTokenRepository refreshTokenRepository)
 {
+    /// <param name="utcNow">The caller's time for the whole operation: the stored token's creation, and the rotation's check that the old one is still active.</param>
     public async Task<Result<AuthTokens>> IssueAsync(
         User user,
         RefreshToken? rotating,
+        DateTime utcNow,
         CancellationToken cancellationToken = default)
     {
         var permissions = await permissionLookup.GetPermissionCodesAsync(user.Id, cancellationToken);
@@ -28,8 +30,8 @@ public sealed class TokenIssuer(
         var refreshTokenHash = tokenService.HashRefreshToken(refreshToken.Value);
 
         var stored = rotating is null
-            ? RefreshToken.Issue(user.Id, refreshTokenHash, refreshToken.ExpiresAtUtc)
-            : rotating.Rotate(refreshTokenHash, refreshToken.ExpiresAtUtc);
+            ? RefreshToken.Issue(user.Id, refreshTokenHash, refreshToken.ExpiresAtUtc, utcNow)
+            : rotating.Rotate(refreshTokenHash, refreshToken.ExpiresAtUtc, utcNow);
 
         if (stored.IsFailure)
         {

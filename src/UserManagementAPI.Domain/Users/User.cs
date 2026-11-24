@@ -74,14 +74,14 @@ public sealed class User : AggregateRoot
 
     private readonly List<UserRole> _roles = [];
 
-    private User(Guid id, Email email, PersonName name, PasswordHash passwordHash)
+    private User(Guid id, Email email, PersonName name, PasswordHash passwordHash, DateTime utcNow)
         : base(id)
     {
         Email = email;
         Name = name;
         PasswordHash = passwordHash;
         Status = UserStatus.Pending;
-        CreatedAtUtc = DateTime.UtcNow;
+        CreatedAtUtc = utcNow;
         UpdatedAtUtc = CreatedAtUtc;
     }
 
@@ -108,23 +108,32 @@ public sealed class User : AggregateRoot
     /// Registers a user holding <paramref name="initialRoleId"/>. A user has a
     /// role from the moment it exists, so the invariant RemoveRole defends holds
     /// from registration on; which role a new user gets is the caller's policy.
+    ///
+    /// Every method that changes the aggregate takes the time it happened as
+    /// <c>utcNow</c>. The domain does not read a clock: the caller does, once per
+    /// operation, so a test can state the time exactly (#84).
     /// </summary>
-    public static Result<User> Register(Email email, PersonName name, PasswordHash passwordHash, Guid initialRoleId)
+    public static Result<User> Register(
+        Email email,
+        PersonName name,
+        PasswordHash passwordHash,
+        Guid initialRoleId,
+        DateTime utcNow)
     {
         if (initialRoleId == Guid.Empty)
         {
             return Result.Failure<User>(InitialRoleRequired);
         }
 
-        var user = new User(Guid.NewGuid(), email, name, passwordHash);
-        user._roles.Add(new UserRole(user.Id, initialRoleId));
+        var user = new User(Guid.NewGuid(), email, name, passwordHash, utcNow);
+        user._roles.Add(new UserRole(user.Id, initialRoleId, utcNow));
 
-        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id));
+        user.RaiseDomainEvent(new UserRegisteredDomainEvent(user.Id, utcNow));
 
         return Result.Success(user);
     }
 
-    public Result VerifyEmail()
+    public Result VerifyEmail(DateTime utcNow)
     {
         if (Status != UserStatus.Pending)
         {
@@ -132,7 +141,7 @@ public sealed class User : AggregateRoot
         }
 
         Status = UserStatus.Active;
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
@@ -143,7 +152,7 @@ public sealed class User : AggregateRoot
     /// current state must not look like an edit — not to the audit log, which
     /// would list a field that did not move, and not to an ETag.
     /// </summary>
-    public Result ChangeEmail(Email email)
+    public Result ChangeEmail(Email email, DateTime utcNow)
     {
         if (Status == UserStatus.Deactivated)
         {
@@ -156,13 +165,13 @@ public sealed class User : AggregateRoot
         }
 
         Email = email;
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
 
     /// <summary>Same rule as ChangeEmail: the current name is a no-op.</summary>
-    public Result ChangeName(PersonName name)
+    public Result ChangeName(PersonName name, DateTime utcNow)
     {
         if (Status == UserStatus.Deactivated)
         {
@@ -175,12 +184,12 @@ public sealed class User : AggregateRoot
         }
 
         Name = name;
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
 
-    public Result Lock()
+    public Result Lock(DateTime utcNow)
     {
         if (Status == UserStatus.Locked)
         {
@@ -193,14 +202,14 @@ public sealed class User : AggregateRoot
         }
 
         Status = UserStatus.Locked;
-        Touch();
+        Touch(utcNow);
 
-        RaiseDomainEvent(new UserLockedDomainEvent(Id));
+        RaiseDomainEvent(new UserLockedDomainEvent(Id, utcNow));
 
         return Result.Success();
     }
 
-    public Result Unlock()
+    public Result Unlock(DateTime utcNow)
     {
         if (Status != UserStatus.Locked)
         {
@@ -208,7 +217,7 @@ public sealed class User : AggregateRoot
         }
 
         Status = UserStatus.Active;
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
@@ -233,7 +242,7 @@ public sealed class User : AggregateRoot
         return Result.Success();
     }
 
-    public Result Deactivate()
+    public Result Deactivate(DateTime utcNow)
     {
         if (Status == UserStatus.Deactivated)
         {
@@ -241,12 +250,12 @@ public sealed class User : AggregateRoot
         }
 
         Status = UserStatus.Deactivated;
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
 
-    public Result AssignRole(Guid roleId)
+    public Result AssignRole(Guid roleId, DateTime utcNow)
     {
         if (Status == UserStatus.Deactivated)
         {
@@ -258,8 +267,8 @@ public sealed class User : AggregateRoot
             return Result.Failure(RoleAlreadyAssigned);
         }
 
-        _roles.Add(new UserRole(Id, roleId));
-        Touch();
+        _roles.Add(new UserRole(Id, roleId, utcNow));
+        Touch(utcNow);
 
         return Result.Success();
     }
@@ -269,7 +278,7 @@ public sealed class User : AggregateRoot
     /// reduced access — it is a user no permission check can reason about, which
     /// is a state the system should not be able to reach.
     /// </summary>
-    public Result RemoveRole(Guid roleId)
+    public Result RemoveRole(Guid roleId, DateTime utcNow)
     {
         var assigned = _roles.FirstOrDefault(role => role.RoleId == roleId);
 
@@ -284,10 +293,10 @@ public sealed class User : AggregateRoot
         }
 
         _roles.Remove(assigned);
-        Touch();
+        Touch(utcNow);
 
         return Result.Success();
     }
 
-    private void Touch() => UpdatedAtUtc = DateTime.UtcNow;
+    private void Touch(DateTime utcNow) => UpdatedAtUtc = utcNow;
 }

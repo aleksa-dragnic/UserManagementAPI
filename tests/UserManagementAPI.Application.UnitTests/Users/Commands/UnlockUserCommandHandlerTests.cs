@@ -9,7 +9,9 @@ public sealed class UnlockUserCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private UnlockUserCommandHandler Handler() => new(_userRepository, _unitOfWork);
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
+    private UnlockUserCommandHandler Handler() => new(_userRepository, _unitOfWork, _clock);
 
     [Fact]
     public async Task UnlocksALockedUser_AndSaves()

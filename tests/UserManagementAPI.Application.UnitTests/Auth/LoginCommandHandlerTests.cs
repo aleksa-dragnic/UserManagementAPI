@@ -18,11 +18,14 @@ public sealed class LoginCommandHandlerTests
     private readonly IRefreshTokenRepository _refreshTokens = Substitute.For<IRefreshTokenRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
     private LoginCommandHandler Handler() => new(
         _userRepository,
         _passwordHasher,
         new TokenIssuer(_permissionLookup, _tokenService, _refreshTokens),
-        _unitOfWork);
+        _unitOfWork,
+        _clock);
 
     [Fact]
     public async Task ReturnsATokenPair_AndStoresTheRefreshTokenHash_ForCorrectCredentials()
@@ -31,8 +34,8 @@ public sealed class LoginCommandHandlerTests
         _passwordHasher.Verify(Password, user.PasswordHash.Value).Returns(true);
         _permissionLookup.GetPermissionCodesAsync(user.Id, Arg.Any<CancellationToken>())
             .Returns(new[] { "users.read" });
-        var accessExpires = DateTime.UtcNow.AddMinutes(15);
-        var refreshExpires = DateTime.UtcNow.AddDays(7);
+        var accessExpires = TestClock.Now.AddMinutes(15);
+        var refreshExpires = TestClock.Now.AddDays(7);
         _tokenService.CreateAccessToken(user, Arg.Is<IReadOnlyCollection<string>>(codes => codes.Contains("users.read")))
             .Returns(new IssuedToken("jwt", accessExpires));
         _tokenService.CreateRefreshToken().Returns(new IssuedToken("raw-refresh", refreshExpires));
@@ -43,7 +46,7 @@ public sealed class LoginCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(new AuthTokens("jwt", accessExpires, "raw-refresh", refreshExpires));
         _refreshTokens.Received(1).Add(Arg.Is<RefreshToken>(token =>
-            token.UserId == user.Id && token.TokenHash == "hashed-refresh" && token.IsActive));
+            token.UserId == user.Id && token.TokenHash == "hashed-refresh" && token.IsActiveAt(TestClock.Now)));
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

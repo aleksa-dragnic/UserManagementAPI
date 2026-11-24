@@ -23,17 +23,20 @@ public sealed class RefreshTokenCommandHandlerTests
     {
         _tokenService.HashRefreshToken(Presented).Returns(PresentedHash);
         _tokenService.CreateAccessToken(Arg.Any<User>(), Arg.Any<IReadOnlyCollection<string>>())
-            .Returns(new IssuedToken("new-jwt", DateTime.UtcNow.AddMinutes(15)));
-        _tokenService.CreateRefreshToken().Returns(new IssuedToken("new-raw", DateTime.UtcNow.AddDays(7)));
+            .Returns(new IssuedToken("new-jwt", TestClock.Now.AddMinutes(15)));
+        _tokenService.CreateRefreshToken().Returns(new IssuedToken("new-raw", TestClock.Now.AddDays(7)));
         _tokenService.HashRefreshToken("new-raw").Returns("new-hash");
     }
+
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
 
     private RefreshTokenCommandHandler Handler() => new(
         _refreshTokens,
         _userRepository,
         _tokenService,
         new TokenIssuer(_permissionLookup, _tokenService, _refreshTokens),
-        _unitOfWork);
+        _unitOfWork,
+        _clock);
 
     [Fact]
     public async Task RotatesTheToken_AndReturnsANewPair()
@@ -57,7 +60,7 @@ public sealed class RefreshTokenCommandHandlerTests
     {
         var user = TestUsers.Active();
         var stored = StoredToken(user);
-        stored.Rotate("someone-elses-hash", DateTime.UtcNow.AddDays(7));
+        stored.Rotate("someone-elses-hash", TestClock.Now.AddDays(7), TestClock.Now);
 
         var result = await Handler().HandleAsync(new RefreshTokenCommand(Presented));
 
@@ -65,6 +68,29 @@ public sealed class RefreshTokenCommandHandlerTests
         await _refreshTokens.Received(1).RevokeAllActiveForUserAsync(user.Id, Arg.Any<CancellationToken>());
         _refreshTokens.DidNotReceive().Add(Arg.Any<RefreshToken>());
         await _unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AToken_IsExchanged_UpToTheTickBeforeItExpires()
+    {
+        StoredToken(TestUsers.Active(), lifetime: TimeSpan.FromDays(7));
+        _clock.Advance(TimeSpan.FromDays(7) - TimeSpan.FromTicks(1));
+
+        var result = await Handler().HandleAsync(new RefreshTokenCommand(Presented));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AToken_IsRefused_FromTheInstantItExpires()
+    {
+        StoredToken(TestUsers.Active(), lifetime: TimeSpan.FromDays(7));
+        _clock.Advance(TimeSpan.FromDays(7));
+
+        var result = await Handler().HandleAsync(new RefreshTokenCommand(Presented));
+
+        result.Error.Should().Be(AuthErrors.InvalidRefreshToken);
+        _refreshTokens.DidNotReceive().Add(Arg.Any<RefreshToken>());
     }
 
     [Fact]
@@ -82,7 +108,7 @@ public sealed class RefreshTokenCommandHandlerTests
     public async Task ARevokedToken_Fails()
     {
         var stored = StoredToken(TestUsers.Active());
-        stored.Revoke();
+        stored.Revoke(TestClock.Now);
 
         var result = await Handler().HandleAsync(new RefreshTokenCommand(Presented));
 
@@ -111,7 +137,7 @@ public sealed class RefreshTokenCommandHandlerTests
 
     private RefreshToken StoredToken(User user, TimeSpan? lifetime = null)
     {
-        var token = RefreshToken.Issue(user.Id, PresentedHash, DateTime.UtcNow.Add(lifetime ?? TimeSpan.FromDays(7))).Value;
+        var token = RefreshToken.Issue(user.Id, PresentedHash, TestClock.Now.Add(lifetime ?? TimeSpan.FromDays(7)), TestClock.Now).Value;
 
         _refreshTokens.GetByTokenHashAsync(PresentedHash, Arg.Any<CancellationToken>()).Returns(token);
         _userRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);

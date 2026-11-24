@@ -1,6 +1,7 @@
 using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Auth;
@@ -29,6 +30,9 @@ public static class DependencyInjection
     {
         services.AddScoped<IDispatcher, Dispatcher>();
         services.AddScoped<TokenIssuer>();
+
+        // The one clock handlers read; a test replaces it with a FakeTimeProvider.
+        services.TryAddSingleton(TimeProvider.System);
 
         // Registration order is execution order: first registered is outermost.
         // Logging sees everything, including validation failures; validation

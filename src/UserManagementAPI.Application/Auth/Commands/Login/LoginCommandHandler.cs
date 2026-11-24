@@ -15,7 +15,8 @@ public sealed class LoginCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
     TokenIssuer tokenIssuer,
-    IUnitOfWork unitOfWork) : ICommandHandler<LoginCommand, AuthTokens>
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : ICommandHandler<LoginCommand, AuthTokens>
 {
     private const string DecoyPassword = "decoy-password-so-unknown-emails-cost-a-verification-too";
 
@@ -25,6 +26,8 @@ public sealed class LoginCommandHandler(
 
     public async Task<Result<AuthTokens>> HandleAsync(LoginCommand command, CancellationToken cancellationToken = default)
     {
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+
         var email = Email.Create(command.Email);
 
         var user = email.IsSuccess
@@ -48,7 +51,7 @@ public sealed class LoginCommandHandler(
             return Result.Failure<AuthTokens>(canLogIn.Error);
         }
 
-        var tokens = await tokenIssuer.IssueAsync(user, rotating: null, cancellationToken);
+        var tokens = await tokenIssuer.IssueAsync(user, rotating: null, utcNow, cancellationToken);
 
         if (tokens.IsFailure)
         {

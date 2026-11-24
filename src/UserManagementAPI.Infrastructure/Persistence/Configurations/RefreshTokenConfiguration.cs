@@ -50,10 +50,8 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
             .HasForeignKey(token => token.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Ignore(token => token.IsExpired);
         builder.Ignore(token => token.IsRevoked);
         builder.Ignore(token => token.IsRotated);
-        builder.Ignore(token => token.IsActive);
         builder.Ignore(token => token.DomainEvents);
     }
 }

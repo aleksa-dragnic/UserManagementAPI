@@ -9,7 +9,7 @@ public class UserTests
     [Fact]
     public void Register_ProducesAPendingUser()
     {
-        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), TestUsers.MemberRoleId);
+        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), TestUsers.MemberRoleId, TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Status.Should().Be(UserStatus.Pending);
@@ -22,7 +22,7 @@ public class UserTests
     {
         var roleId = Guid.NewGuid();
 
-        var user = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), roleId).Value;
+        var user = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), roleId, TestClock.Now).Value;
 
         user.Roles.Should().ContainSingle()
             .Which.Should().Match<UserRole>(role => role.UserId == user.Id && role.RoleId == roleId);
@@ -31,7 +31,7 @@ public class UserTests
     [Fact]
     public void Register_Fails_WithoutARole()
     {
-        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), Guid.Empty);
+        var result = User.Register(TestUsers.Email(), TestUsers.Name(), TestUsers.Hash(), Guid.Empty, TestClock.Now);
 
         result.Error.Should().Be(User.InitialRoleRequired);
     }
@@ -54,7 +54,7 @@ public class UserTests
         // Same shape as the seedwork test: the wrapper may implement
         // ICollection<T>, what matters is that every mutation path is closed.
         var asCollection = (ICollection<IDomainEvent>)user.DomainEvents;
-        var act = () => asCollection.Add(new UserLockedDomainEvent(user.Id));
+        var act = () => asCollection.Add(new UserLockedDomainEvent(user.Id, TestClock.Now));
 
         asCollection.IsReadOnly.Should().BeTrue();
         act.Should().Throw<NotSupportedException>();
@@ -66,7 +66,7 @@ public class UserTests
     {
         var user = TestUsers.Pending();
 
-        var result = user.VerifyEmail();
+        var result = user.VerifyEmail(TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         user.Status.Should().Be(UserStatus.Active);
@@ -75,23 +75,24 @@ public class UserTests
     [Fact]
     public void VerifyEmail_Fails_FromEveryStateOtherThanPending()
     {
-        TestUsers.Active().VerifyEmail().Error.Should().Be(User.AlreadyVerified);
-        TestUsers.Locked().VerifyEmail().Error.Should().Be(User.AlreadyVerified);
-        TestUsers.Deactivated().VerifyEmail().Error.Should().Be(User.AlreadyVerified);
+        TestUsers.Active().VerifyEmail(TestClock.Now).Error.Should().Be(User.AlreadyVerified);
+        TestUsers.Locked().VerifyEmail(TestClock.Now).Error.Should().Be(User.AlreadyVerified);
+        TestUsers.Deactivated().VerifyEmail(TestClock.Now).Error.Should().Be(User.AlreadyVerified);
     }
 
     [Fact]
-    public void ChangeEmail_ReplacesTheAddress_AndStampsUpdatedAt()
+    public void ChangeEmail_ReplacesTheAddress_AndStampsUpdatedAtWithTheTimeItWasGiven()
     {
         var user = TestUsers.Active();
-        var updatedBefore = user.UpdatedAtUtc;
+        var later = TestClock.Now.AddMinutes(5);
         var newEmail = TestUsers.Email("marko.jovanovic@example.com");
 
-        var result = user.ChangeEmail(newEmail);
+        var result = user.ChangeEmail(newEmail, later);
 
         result.IsSuccess.Should().BeTrue();
         user.Email.Should().Be(newEmail);
-        user.UpdatedAtUtc.Should().BeOnOrAfter(updatedBefore);
+        user.UpdatedAtUtc.Should().Be(later);
+        user.CreatedAtUtc.Should().Be(TestClock.Now);
     }
 
     [Fact]
@@ -101,7 +102,7 @@ public class UserTests
         var current = user.Email;
         var updatedBefore = user.UpdatedAtUtc;
 
-        var result = user.ChangeEmail(TestUsers.Email());
+        var result = user.ChangeEmail(TestUsers.Email(), TestClock.Now.AddMinutes(5));
 
         result.IsSuccess.Should().BeTrue();
         user.Email.Should().BeSameAs(current);
@@ -109,17 +110,17 @@ public class UserTests
     }
 
     [Fact]
-    public void ChangeName_ReplacesTheName_AndStampsUpdatedAt()
+    public void ChangeName_ReplacesTheName_AndStampsUpdatedAtWithTheTimeItWasGiven()
     {
         var user = TestUsers.Active();
-        var updatedBefore = user.UpdatedAtUtc;
+        var later = TestClock.Now.AddMinutes(5);
         var newName = TestUsers.Name("Marko", "Jovanović");
 
-        var result = user.ChangeName(newName);
+        var result = user.ChangeName(newName, later);
 
         result.IsSuccess.Should().BeTrue();
         user.Name.Should().Be(newName);
-        user.UpdatedAtUtc.Should().BeOnOrAfter(updatedBefore);
+        user.UpdatedAtUtc.Should().Be(later);
     }
 
     [Fact]
@@ -129,7 +130,7 @@ public class UserTests
         var current = user.Name;
         var updatedBefore = user.UpdatedAtUtc;
 
-        var result = user.ChangeName(TestUsers.Name());
+        var result = user.ChangeName(TestUsers.Name(), TestClock.Now.AddMinutes(5));
 
         result.IsSuccess.Should().BeTrue();
         user.Name.Should().BeSameAs(current);
@@ -142,7 +143,7 @@ public class UserTests
         var user = TestUsers.Deactivated();
         var original = user.Email;
 
-        var result = user.ChangeEmail(TestUsers.Email("marko.jovanovic@example.com"));
+        var result = user.ChangeEmail(TestUsers.Email("marko.jovanovic@example.com"), TestClock.Now);
 
         result.Error.Should().Be(User.Deactivated);
         user.Email.Should().Be(original);
@@ -151,7 +152,7 @@ public class UserTests
     [Fact]
     public void ChangeName_Fails_WhenTheUserIsDeactivated()
     {
-        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "Jovanović"));
+        var result = TestUsers.Deactivated().ChangeName(TestUsers.Name("Marko", "Jovanović"), TestClock.Now);
 
         result.Error.Should().Be(User.Deactivated);
     }
@@ -162,7 +163,7 @@ public class UserTests
         var user = TestUsers.Active();
         user.ClearDomainEvents();
 
-        var result = user.Lock();
+        var result = user.Lock(TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         user.Status.Should().Be(UserStatus.Locked);
@@ -177,7 +178,7 @@ public class UserTests
         var user = TestUsers.Locked();
         user.ClearDomainEvents();
 
-        var result = user.Lock();
+        var result = user.Lock(TestClock.Now);
 
         result.Error.Should().Be(User.AlreadyLocked);
         user.DomainEvents.Should().BeEmpty();
@@ -186,7 +187,7 @@ public class UserTests
     [Fact]
     public void Lock_Fails_WhenTheUserIsDeactivated()
     {
-        TestUsers.Deactivated().Lock().Error.Should().Be(User.Deactivated);
+        TestUsers.Deactivated().Lock(TestClock.Now).Error.Should().Be(User.Deactivated);
     }
 
     [Fact]
@@ -194,7 +195,7 @@ public class UserTests
     {
         var user = TestUsers.Locked();
 
-        var result = user.Unlock();
+        var result = user.Unlock(TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         user.Status.Should().Be(UserStatus.Active);
@@ -203,9 +204,9 @@ public class UserTests
     [Fact]
     public void Unlock_Fails_WhenTheUserIsNotLocked()
     {
-        TestUsers.Pending().Unlock().Error.Should().Be(User.NotLocked);
-        TestUsers.Active().Unlock().Error.Should().Be(User.NotLocked);
-        TestUsers.Deactivated().Unlock().Error.Should().Be(User.NotLocked);
+        TestUsers.Pending().Unlock(TestClock.Now).Error.Should().Be(User.NotLocked);
+        TestUsers.Active().Unlock(TestClock.Now).Error.Should().Be(User.NotLocked);
+        TestUsers.Deactivated().Unlock(TestClock.Now).Error.Should().Be(User.NotLocked);
     }
 
     [Fact]
@@ -214,8 +215,8 @@ public class UserTests
         var pending = TestUsers.Pending();
         var locked = TestUsers.Locked();
 
-        pending.Deactivate().IsSuccess.Should().BeTrue();
-        locked.Deactivate().IsSuccess.Should().BeTrue();
+        pending.Deactivate(TestClock.Now).IsSuccess.Should().BeTrue();
+        locked.Deactivate(TestClock.Now).IsSuccess.Should().BeTrue();
 
         pending.Status.Should().Be(UserStatus.Deactivated);
         locked.Status.Should().Be(UserStatus.Deactivated);
@@ -224,7 +225,7 @@ public class UserTests
     [Fact]
     public void Deactivate_Fails_WhenTheUserIsAlreadyDeactivated()
     {
-        TestUsers.Deactivated().Deactivate().Error.Should().Be(User.AlreadyDeactivated);
+        TestUsers.Deactivated().Deactivate(TestClock.Now).Error.Should().Be(User.AlreadyDeactivated);
     }
     [Fact]
     public void AssignRole_RecordsTheAssignment()
@@ -232,7 +233,7 @@ public class UserTests
         var user = TestUsers.Active();
         var roleId = Guid.NewGuid();
 
-        var result = user.AssignRole(roleId);
+        var result = user.AssignRole(roleId, TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         user.Roles.Should().HaveCount(2).And
@@ -245,7 +246,7 @@ public class UserTests
         var roleId = Guid.NewGuid();
         var user = TestUsers.Active(roleId);
 
-        var result = user.AssignRole(roleId);
+        var result = user.AssignRole(roleId, TestClock.Now);
 
         result.Error.Should().Be(User.RoleAlreadyAssigned);
         user.Roles.Should().ContainSingle();
@@ -254,7 +255,7 @@ public class UserTests
     [Fact]
     public void AssignRole_Fails_WhenTheUserIsDeactivated()
     {
-        TestUsers.Deactivated().AssignRole(Guid.NewGuid()).Error.Should().Be(User.Deactivated);
+        TestUsers.Deactivated().AssignRole(Guid.NewGuid(), TestClock.Now).Error.Should().Be(User.Deactivated);
     }
 
     [Fact]
@@ -262,9 +263,9 @@ public class UserTests
     {
         var first = Guid.NewGuid();
         var user = TestUsers.Active(first);
-        user.AssignRole(Guid.NewGuid());
+        user.AssignRole(Guid.NewGuid(), TestClock.Now);
 
-        var result = user.RemoveRole(first);
+        var result = user.RemoveRole(first, TestClock.Now);
 
         result.IsSuccess.Should().BeTrue();
         user.Roles.Should().ContainSingle().Which.RoleId.Should().NotBe(first);
@@ -276,7 +277,7 @@ public class UserTests
         var roleId = Guid.NewGuid();
         var user = TestUsers.Active(roleId);
 
-        var result = user.RemoveRole(roleId);
+        var result = user.RemoveRole(roleId, TestClock.Now);
 
         result.Error.Should().Be(User.LastRoleCannotBeRemoved);
         user.Roles.Should().ContainSingle();
@@ -286,9 +287,9 @@ public class UserTests
     public void RemoveRole_Fails_WhenTheUserDoesNotHoldTheRole()
     {
         var user = TestUsers.Active();
-        user.AssignRole(Guid.NewGuid());
+        user.AssignRole(Guid.NewGuid(), TestClock.Now);
 
-        var result = user.RemoveRole(Guid.NewGuid());
+        var result = user.RemoveRole(Guid.NewGuid(), TestClock.Now);
 
         result.Error.Should().Be(User.RoleNotAssigned);
     }

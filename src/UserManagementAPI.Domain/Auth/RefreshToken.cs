@@ -24,13 +24,13 @@ public sealed class RefreshToken : AggregateRoot
         "The refresh token is already revoked.",
         ErrorType.Conflict);
 
-    private RefreshToken(Guid id, Guid userId, string tokenHash, DateTime expiresAtUtc)
+    private RefreshToken(Guid id, Guid userId, string tokenHash, DateTime expiresAtUtc, DateTime utcNow)
         : base(id)
     {
         UserId = userId;
         TokenHash = tokenHash;
         ExpiresAtUtc = expiresAtUtc;
-        CreatedAtUtc = DateTime.UtcNow;
+        CreatedAtUtc = utcNow;
     }
 
     /// <summary>Required by EF Core.</summary>
@@ -51,22 +51,23 @@ public sealed class RefreshToken : AggregateRoot
     /// <summary>The token this one was exchanged for; set by Rotate, never cleared.</summary>
     public Guid? ReplacedById { get; private set; }
 
-    public bool IsExpired => DateTime.UtcNow >= ExpiresAtUtc;
-
     public bool IsRevoked => RevokedAtUtc is not null;
 
     public bool IsRotated => ReplacedById is not null;
 
-    public bool IsActive => !IsExpired && !IsRevoked && !IsRotated;
+    /// <summary>Expired from <see cref="ExpiresAtUtc"/> on, that instant included.</summary>
+    public bool IsExpiredAt(DateTime utcNow) => utcNow >= ExpiresAtUtc;
 
-    public static Result<RefreshToken> Issue(Guid userId, string tokenHash, DateTime expiresAtUtc)
+    public bool IsActiveAt(DateTime utcNow) => !IsExpiredAt(utcNow) && !IsRevoked && !IsRotated;
+
+    public static Result<RefreshToken> Issue(Guid userId, string tokenHash, DateTime expiresAtUtc, DateTime utcNow)
     {
         if (string.IsNullOrWhiteSpace(tokenHash))
         {
             return Result.Failure<RefreshToken>(HashEmpty);
         }
 
-        return Result.Success(new RefreshToken(Guid.NewGuid(), userId, tokenHash, expiresAtUtc));
+        return Result.Success(new RefreshToken(Guid.NewGuid(), userId, tokenHash, expiresAtUtc, utcNow));
     }
 
     /// <summary>
@@ -74,14 +75,14 @@ public sealed class RefreshToken : AggregateRoot
     /// of being replaced; it is not revoked, because "replaced" is the state
     /// that reuse detection looks for.
     /// </summary>
-    public Result<RefreshToken> Rotate(string newTokenHash, DateTime newExpiresAtUtc)
+    public Result<RefreshToken> Rotate(string newTokenHash, DateTime newExpiresAtUtc, DateTime utcNow)
     {
-        if (!IsActive)
+        if (!IsActiveAt(utcNow))
         {
             return Result.Failure<RefreshToken>(NotActive);
         }
 
-        var replacement = Issue(UserId, newTokenHash, newExpiresAtUtc);
+        var replacement = Issue(UserId, newTokenHash, newExpiresAtUtc, utcNow);
 
         if (replacement.IsFailure)
         {
@@ -93,14 +94,14 @@ public sealed class RefreshToken : AggregateRoot
         return replacement;
     }
 
-    public Result Revoke()
+    public Result Revoke(DateTime utcNow)
     {
         if (IsRevoked)
         {
             return Result.Failure(AlreadyRevoked);
         }
 
-        RevokedAtUtc = DateTime.UtcNow;
+        RevokedAtUtc = utcNow;
 
         return Result.Success();
     }

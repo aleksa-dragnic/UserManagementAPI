@@ -9,7 +9,9 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
-    private UpdateUserCommandHandler Handler() => new(_userRepository, _unitOfWork);
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
+    private UpdateUserCommandHandler Handler() => new(_userRepository, _unitOfWork, _clock);
 
     [Fact]
     public async Task ChangesEmailAndName_AndSaves()

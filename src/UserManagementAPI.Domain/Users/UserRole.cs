@@ -10,12 +10,12 @@ namespace UserManagementAPI.Domain.Users;
 /// </summary>
 public sealed class UserRole : Entity
 {
-    internal UserRole(Guid userId, Guid roleId)
+    internal UserRole(Guid userId, Guid roleId, DateTime assignedAtUtc)
         : base(Guid.NewGuid())
     {
         UserId = userId;
         RoleId = roleId;
-        AssignedAtUtc = DateTime.UtcNow;
+        AssignedAtUtc = assignedAtUtc;
     }
 
     private UserRole()

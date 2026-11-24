@@ -63,6 +63,8 @@ public sealed class AuthMetricsTests : IDisposable
 
     public void Dispose() => _listener.Dispose();
 
+    private readonly FakeTimeProvider _clock = new(TestClock.Now);
+
     private LoginCommandHandler Handler() => new(
         _userRepository,
         _passwordHasher,
@@ -70,5 +72,6 @@ public sealed class AuthMetricsTests : IDisposable
             Substitute.For<IPermissionLookup>(),
             Substitute.For<ITokenService>(),
             Substitute.For<IRefreshTokenRepository>()),
-        _unitOfWork);
+        _unitOfWork,
+        _clock);
 }

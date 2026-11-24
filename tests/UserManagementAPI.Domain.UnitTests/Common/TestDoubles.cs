@@ -12,7 +12,7 @@ internal sealed class OtherTestEntity(Guid id) : Entity(id);
 
 internal sealed record TestDomainEvent(Guid EntityId) : IDomainEvent
 {
-    public DateTime OccurredOnUtc { get; } = DateTime.UtcNow;
+    public DateTime OccurredOnUtc { get; } = TestClock.Now;
 }
 
 internal sealed class TestAggregate(Guid id) : AggregateRoot(id)

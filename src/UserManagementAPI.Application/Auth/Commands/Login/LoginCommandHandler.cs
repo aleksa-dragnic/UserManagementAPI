@@ -10,11 +10,16 @@ namespace UserManagementAPI.Application.Auth.Commands.Login;
 /// password is the same error, and it takes the same time — a password is
 /// verified either way, against a decoy hash when there is no user. A
 /// distinguishable response, in content or in timing, is a user-enumeration hole.
+///
+/// Before any of that, the login throttle (ADR 0024): after enough wrong
+/// passwords in a row for one email, sign-in for it is refused for a while,
+/// whatever password comes next.
 /// </summary>
 public sealed class LoginCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
     TokenIssuer tokenIssuer,
+    ILoginThrottle loginThrottle,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider) : ICommandHandler<LoginCommand, AuthTokens>
 {
@@ -28,6 +33,13 @@ public sealed class LoginCommandHandler(
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
 
+        // Checked before the password is: while it lasts, no password is tried.
+        if (await loginThrottle.BlockedForAsync(command.Email, cancellationToken) is { } wait)
+        {
+            AuthMetrics.LoginRefused(AuthErrors.TooManyFailedAttemptsCode);
+            return Result.Failure<AuthTokens>(AuthErrors.TooManyFailedAttempts(wait));
+        }
+
         var email = Email.Create(command.Email);
 
         var user = email.IsSuccess
@@ -39,6 +51,7 @@ public sealed class LoginCommandHandler(
 
         if (user is null || !passwordMatches)
         {
+            await loginThrottle.RecordFailureAsync(command.Email, cancellationToken);
             AuthMetrics.LoginRefused(AuthErrors.InvalidCredentials.Code);
             return Result.Failure<AuthTokens>(AuthErrors.InvalidCredentials);
         }
@@ -59,6 +72,7 @@ public sealed class LoginCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await loginThrottle.ResetAsync(command.Email, cancellationToken);
         AuthMetrics.LoginSucceeded();
 
         return tokens;

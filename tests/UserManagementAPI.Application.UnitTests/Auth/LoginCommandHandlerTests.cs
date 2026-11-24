@@ -1,6 +1,7 @@
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Application.Auth;
 using UserManagementAPI.Application.Auth.Commands.Login;
+using UserManagementAPI.Application.Common;
 using UserManagementAPI.Application.UnitTests.Users;
 using UserManagementAPI.Domain.Auth;
 using UserManagementAPI.Domain.Users;
@@ -17,6 +18,7 @@ public sealed class LoginCommandHandlerTests
     private readonly ITokenService _tokenService = Substitute.For<ITokenService>();
     private readonly IRefreshTokenRepository _refreshTokens = Substitute.For<IRefreshTokenRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly ILoginThrottle _throttle = Substitute.For<ILoginThrottle>();
 
     private readonly FakeTimeProvider _clock = new(TestClock.Now);
 
@@ -24,6 +26,7 @@ public sealed class LoginCommandHandlerTests
         _userRepository,
         _passwordHasher,
         new TokenIssuer(_permissionLookup, _tokenService, _refreshTokens),
+        _throttle,
         _unitOfWork,
         _clock);
 
@@ -111,6 +114,69 @@ public sealed class LoginCommandHandlerTests
         var result = await Handler().HandleAsync(new LoginCommand(user.Email.Value, Password));
 
         result.Error.Should().Be(User.AccountDeactivated);
+    }
+
+    [Fact]
+    public async Task WhileTheEmailIsThrottled_RefusesWith429_WithoutTryingThePassword()
+    {
+        var user = KnownUser(TestUsers.Active());
+        _passwordHasher.Verify(Password, user.PasswordHash.Value).Returns(true);
+        _throttle.BlockedForAsync(user.Email.Value, Arg.Any<CancellationToken>())
+            .Returns(TimeSpan.FromSeconds(4));
+
+        var result = await Handler().HandleAsync(new LoginCommand(user.Email.Value, Password));
+
+        // The right password is refused the same way: the refusal says nothing about it.
+        var refused = result.Error.Should().BeOfType<RateLimitedError>().Subject;
+        refused.Code.Should().Be(AuthErrors.TooManyFailedAttemptsCode);
+        refused.RetryAfter.Should().Be(TimeSpan.FromSeconds(4));
+        _passwordHasher.DidNotReceiveWithAnyArgs().Verify(default!, default!);
+        _tokenService.DidNotReceiveWithAnyArgs().CreateAccessToken(default!, default!);
+    }
+
+    [Fact]
+    public async Task AWrongPassword_AndAnUnknownEmail_EachCountAFailure()
+    {
+        var user = KnownUser(TestUsers.Active());
+        _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
+
+        await Handler().HandleAsync(new LoginCommand(user.Email.Value, "wrong"));
+        await Handler().HandleAsync(new LoginCommand("nobody@example.com", Password));
+
+        await _throttle.Received(1).RecordFailureAsync(user.Email.Value, Arg.Any<CancellationToken>());
+        await _throttle.Received(1).RecordFailureAsync("nobody@example.com", Arg.Any<CancellationToken>());
+        await _throttle.DidNotReceiveWithAnyArgs().ResetAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task ASuccessfulLogin_ForgetsTheFailures()
+    {
+        var user = KnownUser(TestUsers.Active());
+        _passwordHasher.Verify(Password, user.PasswordHash.Value).Returns(true);
+        _tokenService.CreateAccessToken(user, Arg.Any<IReadOnlyCollection<string>>())
+            .Returns(new IssuedToken("jwt", TestClock.Now.AddMinutes(15)));
+        _tokenService.CreateRefreshToken().Returns(new IssuedToken("raw", TestClock.Now.AddDays(7)));
+        _tokenService.HashRefreshToken("raw").Returns("hashed");
+
+        var result = await Handler().HandleAsync(new LoginCommand(user.Email.Value, Password));
+
+        result.IsSuccess.Should().BeTrue();
+        await _throttle.Received(1).ResetAsync(user.Email.Value, Arg.Any<CancellationToken>());
+        await _throttle.DidNotReceiveWithAnyArgs().RecordFailureAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task ALockedUser_WithTheRightPassword_NeitherCountsNorForgets()
+    {
+        var user = KnownUser(TestUsers.Locked());
+        _passwordHasher.Verify(Password, user.PasswordHash.Value).Returns(true);
+
+        await Handler().HandleAsync(new LoginCommand(user.Email.Value, Password));
+
+        // The password was right, so it is no guess; the account is not usable,
+        // so it is no success either.
+        await _throttle.DidNotReceiveWithAnyArgs().RecordFailureAsync(default!, default);
+        await _throttle.DidNotReceiveWithAnyArgs().ResetAsync(default!, default);
     }
 
     private User KnownUser(User user)

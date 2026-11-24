@@ -326,6 +326,34 @@ namespace UserManagementAPI.Infrastructure.Migrations
                     b.ToTable("idempotency_keys", (string)null);
                 });
 
+            modelBuilder.Entity("UserManagementAPI.Infrastructure.Identity.LoginFailure", b =>
+                {
+                    b.Property<string>("EmailHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("email_hash");
+
+                    b.Property<DateTime?>("BlockedUntilUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("blocked_until_utc");
+
+                    b.Property<int>("ConsecutiveFailures")
+                        .HasColumnType("integer")
+                        .HasColumnName("consecutive_failures");
+
+                    b.Property<DateTime>("LastFailureAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_failure_at_utc");
+
+                    b.HasKey("EmailHash")
+                        .HasName("pk_login_failures");
+
+                    b.HasIndex("LastFailureAtUtc")
+                        .HasDatabaseName("ix_login_failures_last_failure_at_utc");
+
+                    b.ToTable("login_failures", (string)null);
+                });
+
             modelBuilder.Entity("UserManagementAPI.Infrastructure.Outbox.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")

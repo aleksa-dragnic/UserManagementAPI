@@ -90,6 +90,11 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyStore>(serviceProvider => serviceProvider.GetRequiredService<IdempotencyStore>());
         services.AddHostedService<IdempotencyKeyCleanup>();
 
+        services.Configure<LoginThrottleOptions>(configuration.GetSection(LoginThrottleOptions.SectionName));
+        services.AddScoped<LoginThrottle>();
+        services.AddScoped<ILoginThrottle>(serviceProvider => serviceProvider.GetRequiredService<LoginThrottle>());
+        services.AddHostedService<LoginFailureCleanup>();
+
         AddQueryHandlers(services);
 
         return services;

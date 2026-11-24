@@ -99,6 +99,9 @@ while it wakes up. The database is Neon, also free tier.
   role name in code, no bare `[Authorize]` anywhere
 - Append-only audit log, enforced by a database trigger, recording which fields
   changed and never their values
+- A growing delay per email after five wrong passwords in a row: 429 with
+  `Retry-After`, the same for a right password and an unknown email, never a
+  lockout ([ADR 0024](docs/adr/0024-login-backoff-per-account.md))
 - Per-endpoint rate limiting, security headers with HSTS (CSP, no framing,
   no referrer, Permissions-Policy, COOP and CORP), explicit CORS with
   credentials for named origins only, request size cap
@@ -164,8 +167,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-397 test cases in 317 test methods: 100 in the domain, 96 in the application
-and 201 integration tests (counted on 2026-11-24; `[Theory]` rows count once
+411 test cases in 330 test methods: 100 in the domain, 100 in the application
+and 211 integration tests (counted on 2026-11-24; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 
@@ -180,7 +183,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — twenty-three architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty-four architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone

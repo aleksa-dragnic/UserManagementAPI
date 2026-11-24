@@ -103,6 +103,20 @@ Symptoms: `outbox_messages` rows with `processed_on_utc IS NULL` pile up.
 4. **Several replicas** are safe: each claims its batch with
    `FOR UPDATE SKIP LOCKED` (#85).
 
+## A user cannot sign in: 429 Auth.TooManyFailedAttempts
+
+The login throttle (ADR 0024): five wrong passwords in a row for that email,
+and sign-in for it is refused for a delay that doubles up to fifteen minutes.
+It ends by itself; `Retry-After` says when.
+
+- **Nothing to unlock.** There is no lockout. If the user cannot wait, the
+  row can be deleted. It is keyed by the hash, which is computed the same way
+  the API computes it:
+  `DELETE FROM login_failures WHERE email_hash = upper(encode(sha256(lower(trim('<email>'))::bytea), 'hex'));`
+- **Many rows at once** mean guessing from many addresses. The throttle is
+  doing its job; the logs show `Auth.TooManyFailedAttempts` refusals in the
+  login metrics' `error_code` tag.
+
 ## Backups and restore
 
 Neon keeps the history of each branch for the restore window of the project's

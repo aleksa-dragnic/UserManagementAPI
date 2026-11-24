@@ -156,7 +156,8 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
             Email.Create(email).Value,
             PersonName.Create("Ana", "Petrović").Value,
             PasswordHash.Create(Hash).Value,
-            _memberRoleId, DateTime.UtcNow).Value;
+            _memberRoleId,
+            DateTime.UtcNow).Value;
 
         context.Users.Add(user);
         await context.SaveChangesAsync();

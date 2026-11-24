@@ -24,6 +24,7 @@ public sealed class OutboxBatchProcessor(
     AppDbContext context,
     IOutboxPublisher publisher,
     IOptions<OutboxOptions> options,
+    TimeProvider timeProvider,
     ILogger<OutboxBatchProcessor> logger)
 {
     private readonly OutboxOptions _options = options.Value;
@@ -47,7 +48,7 @@ public sealed class OutboxBatchProcessor(
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        var now = DateTime.UtcNow;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         // The row locks are held until the transaction ends, so the claim covers
         // publishing as well as reading. SKIP LOCKED makes a concurrent poll
@@ -73,7 +74,7 @@ public sealed class OutboxBatchProcessor(
             {
                 await publisher.PublishAsync(message, cancellationToken);
 
-                message.MarkProcessed(DateTime.UtcNow);
+                message.MarkProcessed(timeProvider.GetUtcNow().UtcDateTime);
                 published++;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
@@ -81,7 +82,7 @@ public sealed class OutboxBatchProcessor(
                 // Doubling from the base: 10 s, 20 s, 40 s, ... for the defaults.
                 var backoff = _options.BaseBackoff * Math.Pow(2, message.Attempts);
 
-                message.RecordFailure(exception.Message, DateTime.UtcNow, backoff);
+                message.RecordFailure(exception.Message, timeProvider.GetUtcNow().UtcDateTime, backoff);
 
                 if (message.Attempts >= _options.MaxAttempts)
                 {

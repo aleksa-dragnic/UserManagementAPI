@@ -134,5 +134,6 @@ public sealed class UserRepositoryTests(DatabaseFixture fixture) : IAsyncLifetim
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
         PasswordHash.Create("argon2id$hash").Value,
-        _memberRoleId, DateTime.UtcNow).Value;
+        _memberRoleId,
+        DateTime.UtcNow).Value;
 }

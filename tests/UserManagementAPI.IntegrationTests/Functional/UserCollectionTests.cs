@@ -149,7 +149,8 @@ public sealed class UserCollectionTests(DatabaseFixture fixture) : IAsyncLifetim
                 Email.Create($"user{i:00}@example.com").Value,
                 PersonName.Create($"First{i:00}", i <= 4 ? "Petrović" : $"Last{i:00}").Value,
                 PasswordHash.Create("$argon2id$v=19$m=8192,t=1,p=1$c2FsdA==$aGFzaA==").Value,
-                memberRoleId, DateTime.UtcNow).Value;
+                memberRoleId,
+                DateTime.UtcNow).Value;
 
             if (i % 3 == 0)
             {

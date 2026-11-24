@@ -1,13 +1,13 @@
 # Testing
 
-377 test cases in 301 test methods, counted on 2026-11-24 from a local run of
+380 test cases in 304 test methods, counted on 2026-11-24 from a local run of
 the whole suite. A `[Theory]` with several `[InlineData]` rows counts once per row.
 
 | Project | Methods | Cases | What it covers |
 |---|---|---|---|
 | `UserManagementAPI.Domain.UnitTests` | 88 | 100 | Every aggregate method on its allowed and its refused path, every value object, the seedwork |
 | `UserManagementAPI.Application.UnitTests` | 85 | 96 | Handlers with faked repositories, the pipeline behaviors, validators, query composition, and the layer rules read from the compiled assemblies |
-| `UserManagementAPI.IntegrationTests` | 128 | 181 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
+| `UserManagementAPI.IntegrationTests` | 131 | 184 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
 
 ## Running them
 
@@ -49,5 +49,7 @@ three projects on every pull request and every push to `main`.
   limits, conditional GET, versioning and hypermedia.
 - **Architecture** tests (`LayeringTests`, `ApiLayeringTests`) fail the build
   when a project references a layer it may not, or a controller depends on
-  Infrastructure (ADR 0001). That only `Program.cs` and `Extensions/` touch
+  Infrastructure (ADR 0001). `ClockTests` reads the compiled method bodies of
+  all four projects and fails when anything but the registration in
+  `AddApplication` reads the system clock (#84). That only `Program.cs` and `Extensions/` touch
   Infrastructure is a review rule.

@@ -20,9 +20,10 @@ internal static class RefreshTokenCookie
     /// </summary>
     public const string CookiePath = "/api/v1/auth";
 
-    public static void Write(HttpResponse response, AuthTokens tokens)
+    /// <param name="utcNow">The caller's clock, so the cookie lives exactly as long as the token from now.</param>
+    public static void Write(HttpResponse response, AuthTokens tokens, DateTime utcNow)
     {
-        var remaining = tokens.RefreshTokenExpiresAtUtc - DateTime.UtcNow;
+        var remaining = tokens.RefreshTokenExpiresAtUtc - utcNow;
 
         response.Cookies.Append(CookieName, tokens.RefreshToken, Options(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero));
     }

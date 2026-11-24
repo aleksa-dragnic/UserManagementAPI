@@ -25,7 +25,7 @@ namespace UserManagementAPI.Infrastructure.Auditing;
 /// and refresh tokens (rotated every fifteen minutes per session; the security
 /// events that matter — login, reuse detection — are logged, not audited).
 /// </summary>
-internal sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesInterceptor
+internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider timeProvider) : SaveChangesInterceptor
 {
     private static readonly HashSet<Type> Excluded =
     [
@@ -105,7 +105,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesIn
             }
         }
 
-        var now = DateTime.UtcNow;
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         foreach (var ((entity, entityId), (action, fields)) in pending)
         {

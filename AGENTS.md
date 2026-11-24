@@ -87,8 +87,10 @@ the migrations and builds the container image. CodeQL runs beside it.
   No public setters on domain types; every state change is a method.
 - **The domain does not read a clock.** Every method that changes an aggregate
   takes the time as `utcNow`; a handler reads `TimeProvider` once per command
-  and passes it down. Unit tests use `TestClock.Now` and `FakeTimeProvider`
-  (#84).
+  and passes it down; infrastructure takes `TimeProvider` from the container.
+  `ClockTests` fails the build on any `DateTime.UtcNow`, `DateTime.Now`,
+  `DateTimeOffset.UtcNow` or `TimeProvider.System` outside the registration.
+  Unit tests use `TestClock.Now` and `FakeTimeProvider` (#84).
 - **Expected failures are `Result`, not exceptions.** Every error has a stable
   `errorCode` and reaches the client as RFC 9457 problem details, its status
   following the error's type.

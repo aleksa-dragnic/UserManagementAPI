@@ -31,7 +31,7 @@ namespace UserManagementAPI.Api.Controllers.V1;
 [Produces("application/json")]
 [AllowAnonymous]
 [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
-public sealed class AuthController(IDispatcher dispatcher) : ControllerBase
+public sealed class AuthController(IDispatcher dispatcher, TimeProvider timeProvider) : ControllerBase
 {
     /// <summary>
     /// Exchanges an email and password for an access token. The refresh token
@@ -50,7 +50,7 @@ public sealed class AuthController(IDispatcher dispatcher) : ControllerBase
             return result.ToProblem(HttpContext);
         }
 
-        RefreshTokenCookie.Write(Response, result.Value);
+        RefreshTokenCookie.Write(Response, result.Value, timeProvider.GetUtcNow().UtcDateTime);
 
         return Ok(result.Value.ToResponse());
     }
@@ -82,7 +82,7 @@ public sealed class AuthController(IDispatcher dispatcher) : ControllerBase
             return result.ToProblem(HttpContext);
         }
 
-        RefreshTokenCookie.Write(Response, result.Value);
+        RefreshTokenCookie.Write(Response, result.Value, timeProvider.GetUtcNow().UtcDateTime);
 
         return Ok(result.Value.ToResponse());
     }

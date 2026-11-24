@@ -27,7 +27,8 @@ public sealed class AssignRoleFlowTests(DatabaseFixture fixture) : IAsyncLifetim
             Email.Create("reloaded@example.com").Value,
             PersonName.Create("Ana", "Petrović").Value,
             PasswordHash.Create("argon2id$hash").Value,
-            member.Id, DateTime.UtcNow).Value;
+            member.Id,
+            DateTime.UtcNow).Value;
         user.VerifyEmail(DateTime.UtcNow);
 
         await using (var seedContext = fixture.CreateContext())

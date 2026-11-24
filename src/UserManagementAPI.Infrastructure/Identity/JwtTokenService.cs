@@ -25,10 +25,12 @@ public sealed class JwtTokenService : ITokenService
     private readonly JwtOptions _options;
     private readonly SigningCredentials _signingCredentials;
     private readonly JsonWebTokenHandler _handler = new();
+    private readonly TimeProvider _timeProvider;
 
-    public JwtTokenService(IOptions<JwtOptions> options)
+    public JwtTokenService(IOptions<JwtOptions> options, TimeProvider timeProvider)
     {
         _options = options.Value;
+        _timeProvider = timeProvider;
 
         if (_options.SigningKey.Length < JwtOptions.MinimumSigningKeyLength)
         {
@@ -44,7 +46,7 @@ public sealed class JwtTokenService : ITokenService
 
     public IssuedToken CreateAccessToken(User user, IReadOnlyCollection<string> permissions)
     {
-        var now = DateTime.UtcNow;
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
         var expiresAt = now.Add(_options.AccessTokenLifetime);
 
         var claims = new List<Claim>
@@ -79,7 +81,7 @@ public sealed class JwtTokenService : ITokenService
     {
         var bytes = RandomNumberGenerator.GetBytes(RefreshTokenSize);
 
-        return new IssuedToken(Base64Url.EncodeToString(bytes), DateTime.UtcNow.Add(_options.RefreshTokenLifetime));
+        return new IssuedToken(Base64Url.EncodeToString(bytes), _timeProvider.GetUtcNow().UtcDateTime.Add(_options.RefreshTokenLifetime));
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using UserManagementAPI.Application.Abstractions;
@@ -118,6 +119,42 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AFailedMessage_WaitsOutItsBackoff_ThenDoublesIt()
+    {
+        // Ten seconds, doubling: due again at +10 s, then 20 s after that. A
+        // millisecond is the step because PostgreSQL keeps microseconds, not ticks.
+        var start = new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero);
+        var clock = new FakeTimeProvider(start);
+        await using var provider = fixture.CreateServiceProvider(
+            services =>
+            {
+                services.AddSingleton<IOutboxPublisher>(new ThrowingPublisher());
+                services.AddSingleton<TimeProvider>(clock);
+            },
+            new Dictionary<string, string?> { ["Outbox:BaseBackoff"] = "00:00:10" });
+
+        await RegisterAsync(provider, "backoff@example.com");
+
+        await ProcessBatchAsync(provider);
+        (await AttemptsAndNextAsync()).Should().Be((1, start.UtcDateTime.AddSeconds(10)));
+
+        clock.Advance(TimeSpan.FromSeconds(10) - TimeSpan.FromMilliseconds(1));
+        await ProcessBatchAsync(provider);
+        (await AttemptsAndNextAsync()).Should().Be((1, start.UtcDateTime.AddSeconds(10)), "the backoff has not run out");
+
+        clock.Advance(TimeSpan.FromMilliseconds(1));
+        await ProcessBatchAsync(provider);
+        (await AttemptsAndNextAsync()).Should().Be((2, start.UtcDateTime.AddSeconds(30)), "due at +10 s, then twenty more");
+    }
+
+    private async Task<(int Attempts, DateTime? NextAttemptOnUtc)> AttemptsAndNextAsync()
+    {
+        await using var context = fixture.CreateContext();
+        var message = await context.OutboxMessages.SingleAsync();
+        return (message.Attempts, message.NextAttemptOnUtc);
+    }
+
+    [Fact]
     public async Task TwoProcessorsPollingAtOnce_PublishEachMessageOnce()
     {
         // Two service providers stand in for two replicas: separate containers,
@@ -200,7 +237,8 @@ public sealed class OutboxTests(DatabaseFixture fixture) : IAsyncLifetime
         Email.Create(email).Value,
         PersonName.Create("Ana", "Petrović").Value,
         PasswordHash.Create("pbkdf2-sha256$1$c2FsdA==$aGFzaA==").Value,
-        _memberRoleId, DateTime.UtcNow).Value;
+        _memberRoleId,
+        DateTime.UtcNow).Value;
 
     private sealed class RecordingPublisher : IOutboxPublisher
     {

@@ -56,10 +56,21 @@ holds no addresses, with an index on the last failure for the hourly cleanup
 
 - **Locally and in the compose stack** the API applies them on startup
   (`Database:MigrateOnStartup` is on in Development).
-- **In a deployed instance** they are a deliberate step. They are applied from a
-  workstation with `dotnet ef database update`, against the **direct** Neon
-  connection string (`ConnectionStrings:Migrations`), before deploying code that
-  needs the new schema. The service does not migrate on startup.
+- **In a deployed instance** the `Migrate database` workflow applies them
+  (`.github/workflows/migrate.yml`): when a migration reaches `main`, and by
+  hand. It runs the idempotent script with `psql` over the **direct** Neon
+  connection string, the repository secret `DATABASE_MIGRATIONS_URL`. The
+  service does not migrate on startup. Until 2026-11-24 this was a step from a
+  workstation, and that day it was missed: the login backoff (#131) reached
+  production before `login_failures` did, and every login answered 500.
+- **Readiness waits for them.** `/health/ready` fails while the database lacks a
+  migration the build carries, and Render deploys only a healthy build
+  (`render.yaml`), so the previous version keeps serving until the workflow
+  has run. A migration is therefore additive first: the previous version must
+  run on the new schema, and a column is dropped only in a later deploy than
+  the code that stops reading it.
+- `dotnet ef database update` from a workstation, against the same direct
+  connection string, still works and is the way when the workflow cannot run.
 - Every CI run publishes an idempotent script of all migrations as the
   `migrations` artifact. It can be read before a deploy and applied with
   `psql` instead of the SDK. `MigrationsTests` fails the build when the model

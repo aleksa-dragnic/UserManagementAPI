@@ -29,4 +29,6 @@ Definition of done (docs/BUILD-PLAN.md section 11):
 - No secret, connection string or key is in the diff
 - The description explains why, not only what
 - An ADR is written if this implements a decision
+- A migration is additive, and the previous version runs on the new schema;
+  the Migrate database workflow applies it when it reaches main
 -->

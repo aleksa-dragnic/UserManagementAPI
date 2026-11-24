@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using UserManagementAPI.Application.Abstractions;
 using UserManagementAPI.Domain.Auth;
+using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Outbox;
 using UserManagementAPI.Infrastructure.Persistence;
 
@@ -20,6 +21,10 @@ namespace UserManagementAPI.Infrastructure.Auditing;
 /// PasswordHash) are attributed to their owner as "Email.Value" and never get
 /// an entry of their own. The payload lists the names of changed fields, never
 /// their values.
+///
+/// A role assignment (UserRole) also names the user and the role it joins, as
+/// "userId" and "roleId": references, not values, so a removal can still be
+/// tied to its user and role once the user_roles row is gone (ADR 0025).
 ///
 /// Not audited: the audit log itself, outbox messages (infrastructure plumbing)
 /// and refresh tokens (rotated every fifteen minutes per session; the security
@@ -64,6 +69,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
         appContext.ChangeTracker.DetectChanges();
 
         var pending = new Dictionary<(string Entity, string EntityId), (string Action, SortedSet<string> Fields)>();
+        var assignments = new Dictionary<(string Entity, string EntityId), (Guid UserId, Guid RoleId)>();
 
         foreach (var entry in appContext.ChangeTracker.Entries().ToList())
         {
@@ -89,6 +95,11 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
                 pending[key] = accumulated;
             }
 
+            if (owner.Entity is UserRole assignment)
+            {
+                assignments[key] = (assignment.UserId, assignment.RoleId);
+            }
+
             if (Rank(action) > Rank(accumulated.Action))
             {
                 pending[key] = (action, accumulated.Fields);
@@ -99,7 +110,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
                 continue;
             }
 
-            foreach (var field in ChangedFields(entry))
+            foreach (var field in ChangedFields(entry, appContext.ChangeTracker))
             {
                 accumulated.Fields.Add(prefix + field);
             }
@@ -109,7 +120,9 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
 
         foreach (var ((entity, entityId), (action, fields)) in pending)
         {
-            var payload = JsonSerializer.Serialize(new { changedFields = fields }, SerializerOptions);
+            var payload = assignments.TryGetValue((entity, entityId), out var joins)
+                ? JsonSerializer.Serialize(new { changedFields = fields, userId = joins.UserId, roleId = joins.RoleId }, SerializerOptions)
+                : JsonSerializer.Serialize(new { changedFields = fields }, SerializerOptions);
 
             appContext.AuditLog.Add(new AuditLogEntry(currentUser.UserId, action, entity, entityId, payload, now));
         }
@@ -150,17 +163,54 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
     }
 
     /// <summary>
-    /// Modified: the properties EF marked modified. Added or Deleted owned
+    /// Modified: the properties EF marked modified whose value moved. Added or Deleted owned
     /// entries — EF replaces an owned instance rather than mutating it — count
     /// as every property of the owned type having changed.
     /// </summary>
-    private static IEnumerable<string> ChangedFields(EntityEntry entry)
+    private static IEnumerable<string> ChangedFields(EntityEntry entry, ChangeTracker tracker)
     {
         var properties = entry.Properties.Where(property => !property.Metadata.IsShadowProperty());
 
+        // A replaced owned instance is a Deleted entry and an Added one under the
+        // same owner. The Added one reports the fields whose value differs from
+        // its twin's; the Deleted one reports nothing, so a new last name is not
+        // also a new first name.
+        if (entry.Metadata.IsOwned() && entry.State is EntityState.Added or EntityState.Deleted)
+        {
+            var twin = TwinOf(entry, tracker);
+
+            if (twin is not null)
+            {
+                return entry.State == EntityState.Deleted
+                    ? []
+                    : properties
+                        .Where(property => !Equals(property.CurrentValue, twin.Property(property.Metadata.Name).OriginalValue))
+                        .Select(property => property.Metadata.Name)
+                        .ToList();
+            }
+        }
+
+        // EF replaces an owned value object whole, so a new last name marks the
+        // first name modified too; a field whose value did not move is not a change.
         return entry.State == EntityState.Modified
-            ? properties.Where(property => property.IsModified).Select(property => property.Metadata.Name)
+            ? properties
+                .Where(property => property.IsModified && !Equals(property.OriginalValue, property.CurrentValue))
+                .Select(property => property.Metadata.Name)
             : properties.Select(property => property.Metadata.Name);
+    }
+
+    /// <summary>The other half of a replaced owned instance: same type, same owner, opposite state.</summary>
+    private static EntityEntry? TwinOf(EntityEntry entry, ChangeTracker tracker)
+    {
+        var opposite = entry.State == EntityState.Added ? EntityState.Deleted : EntityState.Added;
+        var ownerKey = entry.Metadata.FindOwnership()!.Properties;
+
+        return tracker.Entries().FirstOrDefault(candidate =>
+            candidate.Metadata == entry.Metadata &&
+            candidate.State == opposite &&
+            ownerKey.All(property => Equals(
+                candidate.Property(property.Name).CurrentValue,
+                entry.Property(property.Name).CurrentValue)));
     }
 
     private static string KeyOf(EntityEntry entry) =>

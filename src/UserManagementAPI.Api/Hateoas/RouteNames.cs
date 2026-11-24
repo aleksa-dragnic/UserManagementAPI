@@ -15,6 +15,8 @@ public static class RouteNames
 
     public const string GetUser = "GetUserV1";
 
+    public const string GetUserHistory = "GetUserHistoryV1";
+
     public const string RegisterUser = "RegisterUserV1";
 
     public const string UpdateUser = "UpdateUserV1";

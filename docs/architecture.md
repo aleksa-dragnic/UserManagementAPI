@@ -127,4 +127,6 @@ detection possible; and `audit_log` carries a trigger that refuses `UPDATE` and
   `[Authorize]` exists in the project.
 - Every write to users and roles is recorded in the append-only audit log, with
   its actor when there is one (a system write has none); payloads
-  record which fields changed, never their values.
+  record which fields changed, never their values. A role assignment also
+  names its user and role, and `GET /api/v1/users/{id}/history` reads a user's
+  rows back (ADR 0025).

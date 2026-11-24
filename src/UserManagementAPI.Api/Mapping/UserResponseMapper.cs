@@ -15,4 +15,6 @@ public static partial class UserResponseMapper
     public static partial UserResponse ToResponse(this UserDto user);
 
     public static partial UserDetailsResponse ToResponse(this UserDetailsDto user);
+
+    public static partial UserHistoryEntryResponse ToResponse(this UserHistoryEntryDto entry);
 }

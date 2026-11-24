@@ -14,6 +14,7 @@ using UserManagementAPI.Application.Users.Commands.LockUser;
 using UserManagementAPI.Application.Users.Commands.RemoveRole;
 using UserManagementAPI.Application.Users.Commands.UnlockUser;
 using UserManagementAPI.Application.Users.Queries.GetUserById;
+using UserManagementAPI.Application.Users.Queries.GetUserHistory;
 using UserManagementAPI.Domain.Common;
 using UserManagementAPI.Domain.Roles;
 
@@ -108,6 +109,29 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
         return HttpContext.WantsHateoas()
             ? Ok(new LinkedResource<UserDetailsResponse>(user, links.ForUser(HttpContext, id)))
             : Ok(user);
+    }
+
+    /// <summary>
+    /// Returns a user's changes, newest first and at most a hundred: what changed, by field name
+    /// and never by value, and who changed it (ADR 0025).
+    /// </summary>
+    [HttpGet("{id:guid}/history", Name = RouteNames.GetUserHistory)]
+    [HttpHead("{id:guid}/history")]
+    [HasPermission(PermissionCodes.UsersRead)]
+    [ETagFilter]
+    [Produces("application/json")]
+    [ProducesResponseType<IReadOnlyList<UserHistoryEntryResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserHistory(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.QueryAsync(new GetUserHistoryQuery(id), cancellationToken);
+
+        return result.IsFailure
+            ? result.ToProblem(HttpContext)
+            : Ok(result.Value.Select(entry => entry.ToResponse()).ToList());
     }
 
     /// <summary>The methods the users collection supports, in the Allow header.</summary>

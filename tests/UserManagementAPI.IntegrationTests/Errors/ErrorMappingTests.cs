@@ -20,6 +20,9 @@ public sealed class ErrorMappingTests
     {
         ["General.NullValue"] = 400,
         ["Request.InvalidIfMatch"] = 400,
+        ["Request.InvalidIdempotencyKey"] = 400,
+        ["Idempotency.KeyReused"] = 422,
+        ["Idempotency.InProgress"] = 409,
         // Answered 413 by its handler, which sets the status itself; its type is Failure.
         ["Request.ContentTooLarge"] = 400,
         ["Request.Malformed"] = 400,

@@ -111,6 +111,10 @@ while it wakes up. The database is Neon, also free tier.
 - Paging, filtering, whitelisted sorting and a search that ignores case and
   diacritics, with metadata in `X-Pagination`
 - Conditional GET: an ETag on every read and 304 on `If-None-Match`
+- Retry-safe registration: an optional `Idempotency-Key` on `POST /users`
+  replays the first 201 instead of registering twice, 422 for a key reused
+  with another body, 409 while the first attempt runs
+  ([ADR 0023](docs/adr/0023-idempotency-key-for-registration.md))
 - Optimistic concurrency on users: the detail carries a `version`, a write
   that sends it back in `If-Match` is refused with 412 once it is stale
   ([ADR 0021](docs/adr/0021-optimistic-concurrency-on-users.md))
@@ -160,8 +164,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-380 test cases in 304 test methods: 100 in the domain, 96 in the application
-and 184 integration tests (counted on 2026-11-24; `[Theory]` rows count once
+397 test cases in 317 test methods: 100 in the domain, 96 in the application
+and 201 integration tests (counted on 2026-11-24; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 
@@ -176,7 +180,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — twenty-two architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty-three architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone

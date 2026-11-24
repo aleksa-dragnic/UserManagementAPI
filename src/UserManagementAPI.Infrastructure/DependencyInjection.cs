@@ -9,6 +9,7 @@ using UserManagementAPI.Domain.Roles;
 using UserManagementAPI.Domain.Users;
 using UserManagementAPI.Infrastructure.Auditing;
 using UserManagementAPI.Infrastructure.Events;
+using UserManagementAPI.Infrastructure.Idempotency;
 using UserManagementAPI.Infrastructure.Identity;
 using UserManagementAPI.Infrastructure.Outbox;
 using UserManagementAPI.Infrastructure.Persistence;
@@ -83,6 +84,11 @@ public static class DependencyInjection
         services.AddSingleton<IOutboxPublisher, LoggingOutboxPublisher>();
         services.AddScoped<OutboxBatchProcessor>();
         services.AddHostedService<OutboxProcessor>();
+
+        services.Configure<IdempotencyOptions>(configuration.GetSection(IdempotencyOptions.SectionName));
+        services.AddScoped<IdempotencyStore>();
+        services.AddScoped<IIdempotencyStore>(serviceProvider => serviceProvider.GetRequiredService<IdempotencyStore>());
+        services.AddHostedService<IdempotencyKeyCleanup>();
 
         AddQueryHandlers(services);
 

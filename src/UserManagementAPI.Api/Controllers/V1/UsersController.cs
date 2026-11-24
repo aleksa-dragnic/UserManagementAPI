@@ -122,16 +122,30 @@ public sealed class UsersController(IDispatcher dispatcher, UserLinkGenerator li
     }
 
     /// <summary>Registers a user. The account starts Pending; this API has no email verification endpoint, so only seeding moves it on.</summary>
+    /// <param name="request">The user to register.</param>
+    /// <param name="idempotencyKey">
+    /// Optional. Sent again with a retry, it returns the first attempt's 201 instead of registering twice;
+    /// reused with a different body it is a 422, and while the first attempt runs a 409 (ADR 0023).
+    /// The filter reads it; it is a parameter here so the OpenAPI document declares it.
+    /// </param>
+    /// <param name="cancellationToken">The request's cancellation.</param>
     [HttpPost(Name = RouteNames.RegisterUser)]
     [HasPermission(PermissionCodes.UsersWrite)]
     [EnableRateLimiting(RateLimitingExtensions.WritePolicy)]
+    [Idempotent]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<UserCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Register(RegisterUserRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(
+        RegisterUserRequest request,
+        [FromHeader(Name = IdempotentAttribute.HeaderName)] string? idempotencyKey,
+        CancellationToken cancellationToken)
     {
+        _ = idempotencyKey;
+
         var result = await dispatcher.SendAsync(request.ToCommand(), cancellationToken);
 
         if (result.IsFailure)

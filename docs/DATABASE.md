@@ -42,11 +42,14 @@ the fields that changed, never their values.
 
 ## Migrations
 
-Eight, in order: `InitialSchema`, `DomainGeneratedKeys`, `AddOutbox`,
+Nine, in order: `InitialSchema`, `DomainGeneratedKeys`, `AddOutbox`,
 `AddRefreshTokens`, `AddAuditLog`, `AddHardening`, `AddUnaccent`,
-`AddUserVersion`. `AddUserVersion` changes nothing in the database: `xmin` is a
-system column every row already has, and the migration only records it in the
-model snapshot.
+`AddUserVersion`, `AddIdempotencyKeys`. `AddUserVersion` changes nothing in the
+database: `xmin` is a system column every row already has, and the migration
+only records it in the model snapshot. `AddIdempotencyKeys` creates
+`idempotency_keys`, the remembered responses of registrations sent with an
+`Idempotency-Key`, keyed by caller, operation and key, with an index on expiry
+for the hourly cleanup (ADR 0023).
 
 - **Locally and in the compose stack** the API applies them on startup
   (`Database:MigrateOnStartup` is on in Development).

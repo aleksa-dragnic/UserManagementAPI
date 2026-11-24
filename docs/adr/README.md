@@ -27,3 +27,4 @@ in the pull request that implements it.
 | [0020](0020-accent-insensitive-search-through-unaccent.md) | Accent-insensitive search through unaccent | post-1.0 |
 | [0021](0021-optimistic-concurrency-on-users.md) | Optimistic concurrency on users, through a version and If-Match | M7 |
 | [0022](0022-working-with-a-coding-agent.md) | Working with a coding agent: the agent drafts, the maintainer decides and merges | post-2.1 |
+| [0023](0023-idempotency-key-for-registration.md) | An Idempotency-Key makes registering a user safe to retry | post-2.1 |

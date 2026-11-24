@@ -1,13 +1,13 @@
 # Testing
 
-411 test cases in 330 test methods, counted on 2026-11-24 from a local run of
+421 test cases in 340 test methods, counted for v2.2.0 on 2026-11-24 from a local run of
 the whole suite. A `[Theory]` with several `[InlineData]` rows counts once per row.
 
 | Project | Methods | Cases | What it covers |
 |---|---|---|---|
 | `UserManagementAPI.Domain.UnitTests` | 88 | 100 | Every aggregate method on its allowed and its refused path, every value object, the seedwork |
 | `UserManagementAPI.Application.UnitTests` | 89 | 100 | Handlers with faked repositories, the pipeline behaviors, validators, query composition, and the layer rules read from the compiled assemblies |
-| `UserManagementAPI.IntegrationTests` | 153 | 211 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
+| `UserManagementAPI.IntegrationTests` | 163 | 221 | Mappings, migrations, generated SQL, event dispatch, the outbox, concurrency, and real HTTP over the whole stack — all against PostgreSQL |
 
 ## Running them
 

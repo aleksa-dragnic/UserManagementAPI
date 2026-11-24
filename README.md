@@ -168,8 +168,8 @@ PostgreSQL.
 | Infrastructure | Integration | Mappings, migrations, generated SQL, event dispatch, outbox, concurrency — against real PostgreSQL |
 | API | Functional | Real HTTP over the full stack: auth flows, permission gates, paging, conditional GET, versioning, hypermedia, hardening |
 
-411 test cases in 330 test methods: 100 in the domain, 100 in the application
-and 211 integration tests (counted on 2026-11-24; `[Theory]` rows count once
+421 test cases in 340 test methods: 100 in the domain, 100 in the application
+and 221 integration tests (counted for v2.2.0 on 2026-11-24; `[Theory]` rows count once
 each). [`docs/TESTING.md`](docs/TESTING.md) describes each level and the rules
 the tests follow.
 

@@ -92,6 +92,46 @@ public sealed class AuditInterceptorTests(DatabaseFixture fixture) : IAsyncLifet
     }
 
     [Fact]
+    public async Task ARoleAssignment_NamesItsUserAndRole_SoItsRemovalCanBeTiedToThem()
+    {
+        await using var provider = fixture.CreateServiceProvider();
+        var user = await RegisterAsync(provider, "assigned@example.com");
+
+        await using var verify = fixture.CreateContext();
+        var assignment = await verify.AuditLog.SingleAsync(entry => entry.Entity == nameof(UserRole));
+
+        assignment.Action.Should().Be("Created");
+        using var payload = JsonDocument.Parse(assignment.Payload);
+        payload.RootElement.GetProperty("userId").GetGuid().Should().Be(user.Id);
+        payload.RootElement.GetProperty("roleId").GetGuid().Should().Be(_memberRoleId);
+    }
+
+    [Fact]
+    public async Task ANewLastName_IsRecordedAsTheLastNameAlone()
+    {
+        // EF replaces PersonName whole; the first name kept its value and was
+        // recorded as changed until the replaced instance was compared with its twin.
+        await using var provider = fixture.CreateServiceProvider();
+        var user = await RegisterAsync(provider, "renamed@example.com");
+
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await context.Users.SingleAsync(candidate => candidate.Id == user.Id);
+
+            tracked.ChangeName(PersonName.Create("Ana", "Jovanović").Value, DateTime.UtcNow);
+            await context.SaveChangesAsync();
+        }
+
+        await using var verify = fixture.CreateContext();
+        var update = await verify.AuditLog.SingleAsync(entry => entry.Action == "Updated");
+        using var payload = JsonDocument.Parse(update.Payload);
+
+        payload.RootElement.GetProperty("changedFields").EnumerateArray().Select(field => field.GetString())
+            .Should().BeEquivalentTo("Name.Last", "UpdatedAtUtc");
+    }
+
+    [Fact]
     public async Task AnUpdateThatChangesNothing_WritesNoAuditEntry()
     {
         await using var provider = fixture.CreateServiceProvider();

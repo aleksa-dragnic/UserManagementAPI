@@ -43,6 +43,7 @@ public sealed class OpenApiDocumentTests(DatabaseFixture fixture) : IAsyncLifeti
 
         HasSecurity(paths, "/api/v1/users", "get").Should().BeTrue();
         HasSecurity(paths, "/api/v1/users/{id}/lock", "post").Should().BeTrue();
+        HasSecurity(paths, "/api/v1/users/{id}/history", "get").Should().BeTrue();
         HasSecurity(paths, "/api/v1/auth/login", "post").Should().BeFalse();
         HasSecurity(paths, "/api", "get").Should().BeFalse();
     }

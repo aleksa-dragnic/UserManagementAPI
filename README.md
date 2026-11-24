@@ -98,7 +98,8 @@ while it wakes up. The database is Neon, also free tier.
 - Permission-based authorization — `[HasPermission("users.write")]`, never a
   role name in code, no bare `[Authorize]` anywhere
 - Append-only audit log, enforced by a database trigger, recording which fields
-  changed and never their values
+  changed and never their values; a user's history reads it back over HTTP
+  ([ADR 0025](docs/adr/0025-a-users-history-from-the-audit-log.md))
 - A growing delay per email after five wrong passwords in a row: 429 with
   `Retry-After`, the same for a right password and an unknown email, never a
   lockout ([ADR 0024](docs/adr/0024-login-backoff-per-account.md))
@@ -183,7 +184,7 @@ running; no connection string is needed.
 
 - [`docs/architecture.md`](docs/architecture.md) — layers, both request paths,
   model types, aggregate boundaries, schema, middleware order
-- [`docs/adr/README.md`](docs/adr/README.md) — twenty-four architecture decision
+- [`docs/adr/README.md`](docs/adr/README.md) — twenty-five architecture decision
   records, each written in the pull request that implemented it
 - [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md) — the plan the project was built
   to, milestone by milestone
@@ -293,6 +294,9 @@ Written down so nobody has to discover them.
   setting `X-Forwarded-For`. Elsewhere only loopback is trusted.
 - **HSTS is ASP.NET Core's default**: thirty days, no `includeSubDomains`, no
   preload. It covers the API's own host and nothing beside it.
+- **A user's history is the last hundred changes, by field name.** It does not
+  say from what to what, and a role removed before 2026-11-24 cannot be tied to
+  its user (ADR 0025).
 
 ## License
 

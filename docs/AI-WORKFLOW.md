@@ -11,8 +11,10 @@ agent itself reads are in [`AGENTS.md`](../AGENTS.md).
 issue  ->  plan  ->  branch  ->  agent draft  ->  review  ->  CI  ->  merge
 ```
 
-1. **Issue.** Every unit of work starts as an issue with a "Done when" list,
-   in a milestone. Deferred ideas are not issues: they live in
+1. **Issue.** Every feature and every bug fix starts as an issue with a "Done
+   when" list, in a milestone. Small documentation, CI and chore changes, such
+   as a dependency update or a corrected document, may go straight to a pull
+   request that says why. Deferred ideas are not issues: they live in
    [`ROADMAP.md`](ROADMAP.md), each with its reasoning, until one is started.
 2. **Plan.** Before any code, the agent reads the issue, the ADRs it touches and
    the code, and writes a short plan: the files, the approach, the tests, what
@@ -77,3 +79,6 @@ The agent's report is where checking starts, not where it ends.
   - `reviewed-by-agent`: the maintainer wrote it and an agent reviewed it
 - Commits before ADR 0022 do not carry the trailer; the history is not
   rewritten to add it.
+- Pull requests before #119 predate the template's AI assistance section
+  (added in #119), and those before #72 predate the template itself, so they
+  do not say how they were made.

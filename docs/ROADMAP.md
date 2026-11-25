@@ -11,21 +11,21 @@ ADR (`docs/AI-WORKFLOW.md`).
 
 | Idea | What it would take | Recorded in |
 |---|---|---|
-| **Email verification and deactivation endpoints** | The domain has both transitions (`User.VerifyEmail()`, `User.Deactivate()`) with their errors and events; the HTTP surface exposes neither. Verification needs a token sent by email, so an email provider and delivery through the outbox (ADR 0008). Deactivation is one endpoint, but it first needs a decision on what happens to the user's refresh tokens and audit trail. | #80 |
-| **Asymmetric token signing and a JWKS endpoint** | Tokens are signed with HMAC-SHA256 and one shared key, so every service that validates a token could also issue one. RS256 or ES256 with a published JWKS would let another service validate without that power and rotate keys by `kid`. ADR 0015 groups JWKS with OpenID Connect; this would separate the two. The first consumer would be a second project that trusts these tokens. | #81 |
-| **OpenID Connect** | Out of scope by ADR 0015. Either as a relying party or as an authorization server it means implementing a specification (discovery, JWKS, PKCE, consent) or depending on a framework that does, and the identity flows would outgrow the user-management domain. | #52 |
+| **Email verification and deactivation endpoints** | The domain has both transitions (`User.VerifyEmail()`, `User.Deactivate()`) with their errors and events; the HTTP surface exposes neither. Verification needs a token sent by email, so an email provider and delivery through the outbox (ADR 0008). Deactivation is one endpoint, but it first needs a decision on what happens to the user's refresh tokens and audit trail. | [#80](https://github.com/aleksa-dragnic/UserManagementAPI/issues/80) |
+| **Asymmetric token signing and a JWKS endpoint** | Tokens are signed with HMAC-SHA256 and one shared key, so every service that validates a token could also issue one. RS256 or ES256 with a published JWKS would let another service validate without that power and rotate keys by `kid`. ADR 0015 groups JWKS with OpenID Connect; this would separate the two. The first consumer would be a second project that trusts these tokens. | [#81](https://github.com/aleksa-dragnic/UserManagementAPI/issues/81) |
+| **OpenID Connect** | Out of scope by ADR 0015. Either as a relying party or as an authorization server it means implementing a specification (discovery, JWKS, PKCE, consent) or depending on a framework that does, and the identity flows would outgrow the user-management domain. | [#52](https://github.com/aleksa-dragnic/UserManagementAPI/issues/52) |
 
 ## Platform
 
 | Idea | What it would take | Recorded in |
 |---|---|---|
-| **Multi-tenancy** | Out of scope by ADR 0015. A tenant id on every aggregate, tenant resolution on every request, and a tenant filter in every query, index and test: the whole codebase, for a requirement nobody has. | #51 |
-| **Webhooks** | Events that leave the service already go through the outbox (ADR 0008). Webhooks add subscriber registration, signed deliveries, retries with backoff and a delivery log per subscriber on top of it. | #53 |
-| **Publishing the container image** | The image is already scanned by Trivy and carries a CycloneDX SBOM in CI (#123); Render builds from the Dockerfile itself, so nothing consumes a published image. Publishing to GHCR waits for a consumer. | #83 |
+| **Multi-tenancy** | Out of scope by ADR 0015. A tenant id on every aggregate, tenant resolution on every request, and a tenant filter in every query, index and test: the whole codebase, for a requirement nobody has. | [#51](https://github.com/aleksa-dragnic/UserManagementAPI/issues/51) |
+| **Webhooks** | Events that leave the service already go through the outbox (ADR 0008). Webhooks add subscriber registration, signed deliveries, retries with backoff and a delivery log per subscriber on top of it. | [#53](https://github.com/aleksa-dragnic/UserManagementAPI/issues/53) |
+| **Publishing the container image** | The image is already scanned by Trivy and carries a CycloneDX SBOM in CI ([#123](https://github.com/aleksa-dragnic/UserManagementAPI/pull/123)); Render builds from the Dockerfile itself, so nothing consumes a published image. Publishing to GHCR waits for a consumer. | [#83](https://github.com/aleksa-dragnic/UserManagementAPI/issues/83) |
 
 ## The maintainer's, outside the code
 
 | What | Where it stands |
 |---|---|
-| **A timed restore drill on Neon** | The procedure is in `docs/RUNBOOK.md`; the first drill, which sets the RTO, needs the Neon account. Its result goes in the runbook's drill log (#117). |
-| **The load test on a small machine** | On the GitHub runner every threshold of `loadtests/` is met; on a 3.45 GiB Docker Desktop VM the mixed run misses its p99 by seconds. Naming the resource the small VM runs out of is optional (#128). |
+| **A timed restore drill on Neon** | Planned, not yet run. The maintainer owns it, because it needs the Neon account. The procedure is in `docs/RUNBOOK.md`; the first drill sets the RTO, and its result goes in the runbook's drill log ([#117](https://github.com/aleksa-dragnic/UserManagementAPI/issues/117)). |
+| **The load test on a small machine** | On the GitHub runner every threshold of `loadtests/` is met; on a 3.45 GiB Docker Desktop VM the mixed run misses its p99 by seconds. Naming the resource the small VM runs out of is optional ([#128](https://github.com/aleksa-dragnic/UserManagementAPI/issues/128)). |

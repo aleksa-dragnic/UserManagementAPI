@@ -14,6 +14,8 @@ column list is in [`architecture.md`](architecture.md#schema).
 | `refresh_tokens` | Refresh tokens, as SHA-256 hashes only | Its own aggregate; `xmin` is its concurrency token (ADR 0009) |
 | `outbox_messages` | Events waiting to leave the service | Written in the same transaction as the change (ADR 0008) |
 | `audit_log` | Who changed which entity, and which fields | Append-only, see below |
+| `idempotency_keys` | A registration's `Idempotency-Key` and the response it produced | Keyed by caller, operation and key; no foreign key; `IdempotencyKeyCleanup` deletes a key once `expires_at_utc` has passed, 24 hours after it was claimed by default (ADR 0023) |
+| `login_failures` | Consecutive wrong passwords per email | Keyed by a SHA-256 of the normalised email, so unknown emails are counted too; `LoginFailureCleanup` deletes a row once its last failure is 24 hours old by default and no delay is running (ADR 0024) |
 
 ## Indexes
 
@@ -23,10 +25,18 @@ Every uniqueness rule has an index that enforces it: `ix_users_email`,
 A violation of `ix_users_email` is reported as `User.EmailNotUnique` (409), the
 same error the handlers' own check returns.
 
+The primary keys of `idempotency_keys` (`pk_idempotency_keys` on `caller_id`,
+`operation`, `key`) and `login_failures` (`pk_login_failures` on `email_hash`)
+are uniqueness rules too: the first makes `INSERT … ON CONFLICT DO NOTHING` a
+claim on a key, the second makes `INSERT … ON CONFLICT DO UPDATE` an atomic
+counter.
+
 The others serve a lookup: `ix_refresh_tokens_user_id` (revoking every token of
 a user), `ix_user_roles_role_id`, `ix_role_permissions_permission_id`,
-`ix_audit_log_occurred_at_utc`, `ix_audit_log_entity_entity_id`, and the partial
-`ix_outbox_messages_pending` on rows where `processed_on_utc IS NULL`.
+`ix_audit_log_occurred_at_utc`, `ix_audit_log_entity_entity_id`, the partial
+`ix_outbox_messages_pending` on rows where `processed_on_utc IS NULL`, and the
+two the cleanups delete by: `ix_idempotency_keys_expires_at_utc` and
+`ix_login_failures_last_failure_at_utc`.
 
 The user search is a scan by design: `lower(unaccent(...))` cannot use an index,
 and at this size a scan is the right plan (ADR 0020).

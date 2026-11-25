@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-12 (recorded in M6; the decision is older, as the record explains)
-- **PR:** #26
+- **PR:** [#26](https://github.com/aleksa-dragnic/UserManagementAPI/pull/26)
 
 ## Context
 

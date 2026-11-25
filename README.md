@@ -213,8 +213,8 @@ every bug fix starts as an issue and a plan; small documentation, CI and chore
 changes may go straight to a pull request. The agent drafts the change on a
 branch, and I review it before CI and the merge. Architecture decisions,
 anything security-sensitive, merges and releases stay with me. Commits the
-agent co-wrote carry a `Co-Authored-By` line, and every pull request since #119
-says how it was made and what I verified myself.
+agent co-wrote carry a `Co-Authored-By` line, and every pull request since #119,
+Dependabot's aside, says how it was made and what I verified myself.
 [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) describes the flow and what is
 delegated; [`AGENTS.md`](AGENTS.md) holds the agent's rules.
 

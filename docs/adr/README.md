@@ -1,7 +1,8 @@
 # Architecture decision records
 
 One file per decision, in the format Context → Decision → Consequences, written
-in the pull request that implements it.
+in the pull request that implements it. A decision that a later change
+amends says so in its header, and in the table below.
 
 | # | Decision | Milestone |
 |---|---|---|
@@ -12,8 +13,8 @@ in the pull request that implements it.
 | [0005](0005-value-objects-as-owned-types.md) | Value objects mapped as EF Core owned types | M2 |
 | [0006](0006-enumeration-classes-instead-of-enums.md) | Enumeration classes instead of C# enums for domain states | M2 |
 | [0007](0007-domain-events-dispatched-before-commit.md) | Domain events dispatched before commit, inside the same transaction | M2 |
-| [0008](0008-outbox-pattern-for-events-that-leave-the-service.md) | Outbox pattern for events that leave the service | M3 |
-| [0009](0009-short-lived-jwts-with-rotating-refresh-tokens.md) | Short-lived JWTs with rotating refresh tokens and reuse detection | M4 |
+| [0008](0008-outbox-pattern-for-events-that-leave-the-service.md) | Outbox pattern for events that leave the service; amended by [#120](https://github.com/aleksa-dragnic/UserManagementAPI/pull/120), which claims the batch with `FOR UPDATE SKIP LOCKED` | M3 |
+| [0009](0009-short-lived-jwts-with-rotating-refresh-tokens.md) | Short-lived JWTs with rotating refresh tokens and reuse detection; amended by [0019](0019-refresh-token-in-an-httponly-cookie.md), which moves the refresh token into an HttpOnly cookie | M4 |
 | [0010](0010-permission-based-authorization-policies.md) | Permission-based authorization policies rather than role checks | M4 |
 | [0011](0011-http-contracts-separate-from-commands.md) | HTTP contracts kept separate from application commands | M3 |
 | [0012](0012-testcontainers-instead-of-in-memory-provider.md) | Testcontainers instead of the EF in-memory provider | M2 |

@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-24
-- **Issue:** #133
+- **Issue:** [#133](https://github.com/aleksa-dragnic/UserManagementAPI/issues/133)
 
 ## Context
 

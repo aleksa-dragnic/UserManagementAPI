@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-09
-- **PR:** #8
+- **PR:** [#8](https://github.com/aleksa-dragnic/UserManagementAPI/pull/8)
 
 ## Context
 

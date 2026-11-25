@@ -560,19 +560,21 @@ The quick start is the part to get right. If someone has to configure a database
 
 ---
 
-## 13. What else — things worth deciding now
+## 13. Presenting the project
 
-**Cadence beats intensity.** A steady commit history over eight weeks reads as real work. Nine hundred lines committed at 3 a.m. on a single Sunday reads as generated. Commit on the days you work, and do not backdate anything.
+Principles for how the repository presents itself, decided up front so they do not have to be decided under pressure.
 
-**Deploy it.** An unreachable project is a screenshot. Neon free tier plus a container on Fly.io or Render costs nothing and turns the README from a description into a demo. Seed a read-only account and put the credentials in the README so anyone can log in and click through Scalar.
+**Keep the history as it happened.** Commit when the work is done, in small commits that each build, and never backdate or rewrite history to change how it looks. Section 14 records the real timeline.
 
-**Ship v1.0 at M4 if time pressure appears.** M0 through M4 is already a complete, defensible API. M5 and M6 are what raise it from good to distinctive. If the job search accelerates, tag `v1.0.0` after M4 and continue in the open rather than leaving an unfinished `main`.
+**Deploy it.** A reachable instance shows the system working in a way a description cannot. Neon free tier plus a container on Fly.io or Render costs nothing. Seed a read-only account and publish its credentials in the README so anyone can sign in and click through Scalar.
 
-**Keep the scope closed.** The strongest signal in a portfolio project is a finished one. Ideas for multi-tenancy, OIDC, webhooks and admin UIs go into GitHub issues labelled `future`, not into `main`. (Since 2026-11-24 they live in `docs/ROADMAP.md` instead, so the tracker holds only work in progress.) Issues that are open and reasoned about look like planning; half-built features look like abandonment.
+**Release in usable increments.** M0 through M4 is already a complete API. If time runs short, tag `v1.0.0` after M4 and continue the later milestones in the open, rather than leaving `main` unfinished.
 
-**Write the CV bullets from the ADRs.** When this is done, the two or three lines on the CV come straight from the decisions that were recorded — modelled X, chose Y over Z for reason W. That is a much stronger sentence than a list of technologies, and it survives the follow-up question in an interview.
+**Keep the scope closed.** A finished, narrow system is worth more than a broad, half-built one. Ideas for multi-tenancy, OIDC, webhooks and admin UIs are written down with their reasoning — first as GitHub issues labelled `future`, since 2026-11-24 in `docs/ROADMAP.md` so the tracker holds only work in progress — and stay out of `main` until one is started.
 
-**Be accurate about what it is.** It is a personal project built to a production standard. Not "used in production", not "serving N users". The work stands on its own; overstating it is the only thing that could undermine it.
+**Describe it through its decisions.** A summary of the project draws on the ADRs — modelled X, chose Y over Z for reason W — rather than on a list of technologies. A decision with its reason can be questioned and defended; a technology list cannot.
+
+**Be accurate about what it is.** It is a personal project built to a production standard. Not "used in production", not "serving N users". Overstating it would undermine the parts that are true.
 
 ---
 
@@ -591,7 +593,7 @@ that made the change.
 | §7 M5 | An unsupported version returns 400 | 404. With the version in the URL segment, `Asp.Versioning` treats an unknown version as an address that does not exist |
 | §7 M6 | A malformed body returns 422 | 400. A body that is not JSON never becomes a command, so no validator can name a field; 422 is kept for a well-formed body with bad values |
 | §7 M5 | Data shaping was never planned, and is explicitly declined | ADR 0017 records why: a shaped response no longer matches the OpenAPI schema |
-| §8 | Fifteen ADRs | Twenty-one. ADR 0016 (query handlers) and 0017 (no data shaping) came out of M5; 0018 (JSON console logs in production) came out of a CodeQL finding after `v1.0.0`; 0019 (the refresh token in an HttpOnly cookie, `v2.0.0`) and 0020 (accent-insensitive search) came out of the console's needs; 0021 (optimistic concurrency on users) came with M7 |
+| §8 | Fifteen ADRs | Twenty-five. ADR 0016 (query handlers) and 0017 (no data shaping) came out of M5; 0018 (JSON console logs in production) came out of a CodeQL finding after `v1.0.0`; 0019 (the refresh token in an HttpOnly cookie, `v2.0.0`) and 0020 (accent-insensitive search) came out of the console's needs; 0021 (optimistic concurrency on users) came with M7; 0022 (working with a coding agent), 0023 (an Idempotency-Key on registration), 0024 (a growing login delay per email) and 0025 (a user's history from the audit log) came with `v2.2.0` |
 | §13 | Deploy to Fly.io or Render | Render, Frankfurt, free tier, with Neon as the database |
 | M5 | `RolesController` appears in no milestone | Added in M5 PR18: a client needs a role id to assign one, and `roles.read` protected nothing without it |
 | §6.2 | An architecture test asserting the layer rules | Added after `v1.0.0`, and in two projects rather than one: the controller rule needs a project that references both `Api` and `Infrastructure`. Until then the rules were greps inside a helper script that is never committed, so nothing enforced them. Test baseline 266 → 269 |
@@ -610,7 +612,7 @@ that made the change.
 | §6.5 | The handler holds no `if` that expresses a business rule | Two rules live in handlers because the aggregate cannot see what they need: refusing to lock your own account needs the caller, and a unique email needs the database |
 | §6.8 | The schema as listed | Column names and lengths differ in places (`audit_log.occurred_at_utc`, `entity_id varchar(200)`, length limits on names and codes, `refresh_tokens.created_at_utc`, `outbox_messages.next_attempt_on_utc`); `docs/architecture.md` lists the schema as built |
 | §4.4 | Squash-merge every pull request | Pull requests up to #42 were merged with merge commits; every pull request merged from #45 on was squashed. The repository's ruleset still allows all three merge methods |
-| §7, §13 | About seven to eight weeks at a steady cadence | Built in a week: the first commit is dated 2026-09-07 and `v1.0.0` 2026-09-12, with 42 commits on 2026-09-12 alone. The history is left as it happened |
+| §7 | About seven to eight weeks | Built in a week: the first commit is dated 2026-09-07 and `v1.0.0` 2026-09-12, with 42 commits on 2026-09-12 alone. The history is left as it happened |
 | §9 | Test baseline | 294 test cases in 267 methods before M7 (95 domain, 89 application, 110 integration); since `v2.1.0` the README and `docs/TESTING.md` carry the current count |
 | §7 M1 | A user always keeps at least one role | Held only on removal until `v2.1.0`: registration created a user with no role, which the `.http` walk-through ran into. `User.Register` now takes the initial role and the handler gives every new user Member |
 | §11 | Errors return problem details with the right status code | Not when two requests registered, or changed to, the same email at once: both passed the handler's check and the unique index refused the second with a 23505 that surfaced as 500. `AppDbContext` now turns a violation of `ix_users_email` into the same `User.EmailNotUnique` the check returns, so the race answers 409 |
@@ -624,3 +626,4 @@ that made the change.
 | §10 | CI as listed | Since `v2.1.0` CI also publishes an idempotent migration script as an artifact, and `MigrationsTests` fails the build when the model has a change no migration carries. `dotnet-ef` is a local tool (`dotnet-tools.json`), pinned to the EF Core version |
 | §6.7, M6 PR24 | Status chosen by error-code family (`Auth.*`, `*.NotFound`, `*NotUnique`, `*Already*`); a client's correlation id taken as sent; four security headers | Since `v2.1.0` every `Error` carries an `ErrorType` and the status follows it, so renaming a code cannot change a status; a table test pins the status of every code. Problem `type` URIs come from one place, the framework's included. A client's correlation id is kept only when it is at most 64 of `[A-Za-z0-9-_.]`. `Permissions-Policy`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy` were added |
 | M7 Finish | Nothing after `v2.0.0` | `v2.1.0` closes the 2026-10-14 review: drift corrected (#67), a user always registered with a role (#68), a registration race answered 409 (#69), CI pinned and bounded (#71), repository standards (#72), the OpenAPI document completed (#73), optimistic concurrency on users with ADR 0021 (#74), production telemetry and two business counters (#75), forwarded headers trusted from known proxies only (#76), migrations checked against the model and published as a script (#77), typed errors, one problem vocabulary and safer correlation ids (#78), and seven decisions recorded as `future` issues (#79-#85). 367 test cases in 294 methods; twenty-one ADRs; eight migrations |
+| v2.2.0 | Nothing after `v2.1.0` | `v2.2.0` (2026-11-24), production hardening and a user's history: how the project is built with a coding agent, with `AGENTS.md` and ADR 0022 (#119); the outbox claims its batch with `FOR UPDATE SKIP LOCKED`, amending ADR 0008 (#120); the domain reads no clock (#121, #122); a Trivy scan and a CycloneDX SBOM for the image (#123); a runbook (#126); an `Idempotency-Key` on registration with ADR 0023 (#127); a k6 load test with its by-hand Load test workflow (#129, #130); a growing delay per email after five wrong passwords with ADR 0024 (#131); the deferred ideas moved from `future` issues to `docs/ROADMAP.md` (#132); a user's history from the audit log with ADR 0025 (#134); and the Migrate database workflow (`.github/workflows/migrate.yml`), which applies migrations from CI when a change to them reaches `main` while `/health/ready` fails until they are in (#135-#137), after the login backoff reached production before its table and every login answered 500. 421 test cases in 340 methods; twenty-five ADRs; ten migrations |

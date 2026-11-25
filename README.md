@@ -200,17 +200,21 @@ running; no connection string is needed.
   coding agent, and how they are checked
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — what the API deliberately does not do
   yet, and what each idea would take
+- [`docs/architecture.md#extending`](docs/architecture.md#extending) — where a
+  new permission, command, query or outbox publisher goes, file by file
 - [`AGENTS.md`](AGENTS.md) — the rules the agent works to
 - [`SECURITY.md`](SECURITY.md) — how to report a vulnerability
 
 ## How this was built
 
 With the help of an AI coding agent, Claude Code, under a written process
-([ADR 0022](docs/adr/0022-working-with-a-coding-agent.md)). Every change starts
-as an issue and a plan, the agent drafts it on a branch, and I review it before
-CI and the merge. Architecture decisions, anything security-sensitive, merges
-and releases stay with me. Commits the agent co-wrote carry a `Co-Authored-By`
-line, and every pull request says how it was made and what I verified myself.
+([ADR 0022](docs/adr/0022-working-with-a-coding-agent.md)). Every feature and
+every bug fix starts as an issue and a plan; small documentation, CI and chore
+changes may go straight to a pull request. The agent drafts the change on a
+branch, and I review it before CI and the merge. Architecture decisions,
+anything security-sensitive, merges and releases stay with me. Commits the
+agent co-wrote carry a `Co-Authored-By` line, and every pull request since #119
+says how it was made and what I verified myself.
 [`docs/AI-WORKFLOW.md`](docs/AI-WORKFLOW.md) describes the flow and what is
 delegated; [`AGENTS.md`](AGENTS.md) holds the agent's rules.
 
@@ -294,6 +298,12 @@ Written down so nobody has to discover them.
   setting `X-Forwarded-For`. Elsewhere only loopback is trusted.
 - **HSTS is ASP.NET Core's default**: thirty days, no `includeSubDomains`, no
   preload. It covers the API's own host and nothing beside it.
+- **Events do not leave the service yet.** The outbox is written in the same
+  transaction as the change and processed with retries, but its publisher,
+  `LoggingOutboxPublisher`, only writes a log line; there is no broker
+  ([ADR 0008](docs/adr/0008-outbox-pattern-for-events-that-leave-the-service.md)).
+  A real transport replaces one registration
+  ([`docs/architecture.md#extending`](docs/architecture.md#extending)).
 - **A user's history is the last hundred changes, by field name.** It does not
   say from what to what, and a role removed before 2026-11-24 cannot be tied to
   its user (ADR 0025).

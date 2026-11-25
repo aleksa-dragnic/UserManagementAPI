@@ -126,7 +126,7 @@ There is no other backup.
 | | Target | Where it comes from |
 |---|---|---|
 | **RPO**, data that may be lost | none inside the restore window | point-in-time restore from Neon's history, not snapshots |
-| **RTO**, time to serve again | to be set by the drill below | create a branch at the instant, repoint `ConnectionStrings__Default`, redeploy |
+| **RTO**, time to serve again | not measured yet; the first restore drill below sets it | create a branch at the instant, repoint `ConnectionStrings__Default`, redeploy |
 | **Beyond the window** | nothing can be restored | the stated limit of a free demo |
 
 **Restore, when data was lost:**
@@ -146,6 +146,12 @@ A restore that has never been done is an assumption. The drill restores into a
 scratch branch, never into `main`, and is timed from step 1 to step 4 above
 (with step 3 pointed at a scratch instance or skipped and timed separately).
 
+No drill has been run yet. The first one is a planned exercise owned by the
+maintainer, who holds the Neon account; it is listed in
+[`ROADMAP.md`](ROADMAP.md#the-maintainers-outside-the-code), and its result is
+recorded in the table below when it is done. Until then the RTO has no
+figure.
+
 | Date | Restored to | Time to a readable branch | Time to serving | Notes |
 |---|---|---|---|---|
-| _not yet performed_ | | | | The first drill sets the RTO above (#117). |
+| _planned, not yet run_ | | | | Owned by the maintainer; the first drill sets the RTO above ([#117](https://github.com/aleksa-dragnic/UserManagementAPI/issues/117)). |

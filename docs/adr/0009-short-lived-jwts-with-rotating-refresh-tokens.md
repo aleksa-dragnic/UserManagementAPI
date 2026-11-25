@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-11
-- **PR:** #15
+- **PR:** [#15](https://github.com/aleksa-dragnic/UserManagementAPI/pull/15)
 - **Amended by:** [0019](0019-refresh-token-in-an-httponly-cookie.md) — the refresh token moved from the body into an HttpOnly cookie
 
 ## Context

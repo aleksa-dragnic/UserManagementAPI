@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-03
-- **PR:** #50
+- **PR:** [#50](https://github.com/aleksa-dragnic/UserManagementAPI/pull/50)
 - **Amends:** [0009](0009-short-lived-jwts-with-rotating-refresh-tokens.md)
 
 ## Context

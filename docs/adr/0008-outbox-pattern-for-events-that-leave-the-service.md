@@ -2,8 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-11
-- **PR:** #13
-- **Amended by:** #120 — the poll claims its batch with `FOR UPDATE SKIP LOCKED`, so more than one replica is safe
+- **PR:** [#13](https://github.com/aleksa-dragnic/UserManagementAPI/pull/13)
+- **Amended by:** [#120](https://github.com/aleksa-dragnic/UserManagementAPI/pull/120) — the poll claims its batch with `FOR UPDATE SKIP LOCKED`, so more than one replica is safe
 
 ## Context
 
